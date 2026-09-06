@@ -25,6 +25,7 @@ const CONFIG = {
   cameraYMultiplier: 0.2,
   parallaxStrength: 0.1,
   spiralOffsetY: -2.0,
+  mobileTileScale: 0.7, // < 1 shrinks the rotating tiles on mobile only; tweak this to taste
 };
 
 const state = {
@@ -278,6 +279,7 @@ function buildSpiral(spiral, textures, camera) {
     const tile = new THREE.Mesh(geometry, material);
     tile.position.y = startY - i * CONFIG.spiralGap;
     tile.rotation.y = i * angleStep;
+    if (state.isMobile) tile.scale.setScalar(CONFIG.mobileTileScale);
     spiral.add(tile);
   }
 }
