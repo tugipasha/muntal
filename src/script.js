@@ -3,6 +3,9 @@ import Lenis from 'lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { vertexShader, fragmentShader } from './shaders.js';
+import { initCommittees } from './committees.js';
+import { initTeam } from './team.js';
+import { initApply } from './apply.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -294,3 +297,110 @@ function deferInit() {
 }
 
 deferInit();
+
+// ---------- Mobile Navigation Drawer ----------
+function initMobileNav() {
+  const burger = document.getElementById('nav-burger');
+  const drawer = document.getElementById('mobile-nav-drawer');
+  const closeBtn = document.getElementById('mobile-nav-close');
+  const backdrop = drawer ? drawer.querySelector('.mobile-nav__backdrop') : null;
+  const links = drawer ? drawer.querySelectorAll('.mobile-nav__link, .mobile-nav__cta') : [];
+
+  if (!burger || !drawer) return;
+
+  function openNav() {
+    drawer.classList.add('is-open');
+    burger.setAttribute('aria-expanded', 'true');
+    drawer.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeNav() {
+    drawer.classList.remove('is-open');
+    burger.setAttribute('aria-expanded', 'false');
+    drawer.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  burger.addEventListener('click', () => {
+    if (drawer.classList.contains('is-open')) {
+      closeNav();
+    } else {
+      openNav();
+    }
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', closeNav);
+  if (backdrop) backdrop.addEventListener('click', closeNav);
+
+  links.forEach((l) => {
+    l.addEventListener('click', () => {
+      closeNav();
+    });
+  });
+}
+
+// ---------- Header Navigation & ScrollSpy ----------
+function initNavLinks() {
+  const desktopLinks = document.querySelectorAll('.nav__links a');
+  const allNavAnchors = document.querySelectorAll('.nav__links a, .mobile-nav__link');
+
+  allNavAnchors.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          lenis.scrollTo(target, { offset: -30, duration: 1.2 });
+          desktopLinks.forEach((l) => l.classList.remove('nav__link--active'));
+          const matchingDesktop = document.querySelector(`.nav__links a[href="${href}"]`);
+          if (matchingDesktop) matchingDesktop.classList.add('nav__link--active');
+        }
+      }
+    });
+  });
+
+  const sections = [
+    { id: 'hero', link: document.querySelector('.nav__links a[href="#hero"]') },
+    { id: 'committees', link: document.querySelector('.nav__links a[href="#committees"]') },
+    { id: 'team', link: document.querySelector('.nav__links a[href="#team"]') },
+    { id: 'apply', link: document.querySelector('.nav__links a[href="#apply"]') },
+  ];
+
+  window.addEventListener('scroll', () => {
+    const scrollPos = window.scrollY + 200;
+    let activeId = 'hero';
+
+    sections.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el && el.offsetTop <= scrollPos) {
+        activeId = id;
+      }
+    });
+
+    sections.forEach(({ id, link }) => {
+      if (link) {
+        link.classList.toggle('nav__link--active', id === activeId);
+      }
+    });
+  }, { passive: true });
+}
+
+// ---------- Initialize Committees Experience & Navigation ----------
+let isAppInitialized = false;
+function initApp() {
+  if (isAppInitialized) return;
+  isAppInitialized = true;
+  initCommittees();
+  initTeam();
+  initApply();
+  initMobileNav();
+  initNavLinks();
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  initApp();
+}
+

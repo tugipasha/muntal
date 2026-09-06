@@ -5,27 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>MUNTAL — Posel United Nations Conference</title>
     <meta name="description" content="MUNTAL is a forum for delegates who debate with preparation, speak with purpose, and draft resolutions that matter. Izmir, Türkiye." />
+    <meta property="og:title" content="MUNTAL — Posel United Nations Conference" />
+    <meta property="og:description" content="MUNTAL is a forum for delegates who debate with preparation, speak with purpose, and draft resolutions that matter. Izmir, Türkiye." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
 
-    <header class="nav">
+    <header class="nav" id="main-nav">
       <a href="#hero" class="nav__mark">MUNTAL</a>
       <nav class="nav__links">
         <a href="#hero" class="nav__link--active">Home</a>
-        <a href="#practice">Committees</a>
-        <a href="#field">Letters</a>
-        <a href="#approach">Apply</a>
+        <a href="#committees">Committees</a>
+        <a href="#team">Team</a>
+        <a href="#apply">Apply</a>
       </nav>
-      <div class="nav__status">
-        <span class="nav__dot"></span>
-        Applications open
+      <div class="nav__actions">
+        <div class="nav__status">
+          <span class="nav__dot"></span>
+          Applications open
+        </div>
+        <button class="nav__burger" id="nav-burger" type="button" aria-label="Toggle mobile menu" aria-expanded="false">
+          <span class="nav__burger-bar"></span>
+          <span class="nav__burger-bar"></span>
+          <span class="nav__burger-bar"></span>
+        </button>
       </div>
     </header>
+
+    <!-- Mobile Navigation Drawer -->
+    <div class="mobile-nav" id="mobile-nav-drawer" aria-hidden="true">
+      <div class="mobile-nav__backdrop"></div>
+      <div class="mobile-nav__panel">
+        <div class="mobile-nav__header">
+          <span class="mobile-nav__mark">MUNTAL</span>
+          <button type="button" class="mobile-nav__close" id="mobile-nav-close" aria-label="Close menu">✕</button>
+        </div>
+        <nav class="mobile-nav__links">
+          <a href="#hero" class="mobile-nav__link">Home</a>
+          <a href="#committees" class="mobile-nav__link">Committees</a>
+          <a href="#team" class="mobile-nav__link">Team</a>
+          <a href="#apply" class="mobile-nav__link">Apply</a>
+        </nav>
+        <div class="mobile-nav__footer">
+          <p class="mobile-nav__meta">Izmir, Türkiye · 23–29 March 2327</p>
+          <a href="#apply" class="mobile-nav__cta">Submit Application →</a>
+        </div>
+      </div>
+    </div>
 
     <main>
       <section class="hero" id="hero">
@@ -68,92 +98,395 @@
           </div>
         </section>
 
-        <section class="section" id="practice">
-          <div class="section__inner">
-            <p class="section__label reveal-text">Committees — Chapter II</p>
-            <h2 class="section__heading reveal-text">Four councils, one week.</h2>
-            <ul class="list">
-              <li class="list__row reveal-text">
-                <span class="list__index">01</span>
-                <span class="list__name">Security Council</span>
-                <span class="list__desc">High-stakes crisis committee with a live update mechanism.</span>
-              </li>
-              <li class="list__row reveal-text">
-                <span class="list__index">02</span>
-                <span class="list__name">General Assembly</span>
-                <span class="list__desc">Broad policy debate on global development and rights.</span>
-              </li>
-              <li class="list__row reveal-text">
-                <span class="list__index">03</span>
-                <span class="list__name">Historical Crisis</span>
-                <span class="list__desc">A single-delegation committee reworking a turning point in history.</span>
-              </li>
-              <li class="list__row reveal-text">
-                <span class="list__index">04</span>
-                <span class="list__name">Press Corps</span>
-                <span class="list__desc">Delegates report, photograph and publish the conference as it unfolds.</span>
-              </li>
-            </ul>
+        <section class="section committees-section" id="committees">
+          <!-- 3D Monolithic Architectural Backdrop Elements -->
+          <div class="committees__backdrop" aria-hidden="true">
+            <div class="backdrop-block backdrop-block--1"></div>
+            <div class="backdrop-block backdrop-block--2"></div>
+            <div class="backdrop-block backdrop-block--3"></div>
+            <div class="backdrop-block backdrop-block--4"></div>
+            <div class="backdrop-light-glow"></div>
+          </div>
+
+          <div class="committees__container">
+            
+            <!-- Section Header & Editorial Masthead -->
+            <div class="committees__header">
+              <div class="committees__meta-row">
+                <span class="committees__label reveal-text">02 — COMMITTEES</span>
+              </div>
+
+              <h2 class="committees__heading reveal-text">Committees</h2>
+              <p class="committees__subtitle reveal-text">Different agendas. One common goal.<br>A better tomorrow.</p>
+            </div>
+
+            <!-- DESKTOP EXPERIENCE: Floating 3D Architectural Monolithic Cards -->
+            <div class="committees-desktop-view">
+              <div class="committees-stage-wrapper">
+                <div class="committees-stage" id="committees-stage">
+                  <div class="committees-desktop-cards">
+                    <!-- 5 Monolithic 3D Cards injected via committees.js -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MOBILE EXPERIENCE: 3D Cylindrical Ring Carousel & Editorial Dossier Detail Card -->
+            <div class="committees-mobile-view" id="committees-mobile-view">
+              <!-- 3D Cylindrical Stage -->
+              <div class="mobile-carousel-stage-wrapper">
+                <div class="mobile-carousel-stage" id="mobile-carousel-stage">
+                  <div class="mobile-carousel-track" id="mobile-carousel-track">
+                    <!-- 5 Monolithic 3D Cards rotated around a cylinder rendered via committees.js -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- Carousel Navigation Controls Bar (Directly below cards) -->
+              <div class="mobile-carousel-controls">
+                <button type="button" class="mobile-carousel-btn mobile-carousel-btn--prev" id="mobile-prev-btn" aria-label="Previous committee">
+                  <span class="mobile-btn-arrow">←</span>
+                </button>
+
+                <div class="mobile-carousel-center">
+                  <div class="mobile-carousel-notch" aria-hidden="true"></div>
+                  <div class="mobile-carousel-counter-group">
+                    <div class="mobile-carousel-line-track">
+                      <span class="mobile-carousel-line-fill" id="mobile-line-fill"></span>
+                    </div>
+                    <span class="mobile-carousel-counter">
+                      <strong class="mobile-counter-current" id="mobile-counter-current">03</strong>
+                      <span class="mobile-counter-sep">/</span>
+                      <span class="mobile-counter-total">05</span>
+                    </span>
+                  </div>
+                </div>
+
+                <button type="button" class="mobile-carousel-btn mobile-carousel-btn--next" id="mobile-next-btn" aria-label="Next committee">
+                  <span class="mobile-btn-arrow">→</span>
+                </button>
+              </div>
+
+              <!-- Editorial Committee Detail Card (Matching Mockup) -->
+              <div class="mobile-committee-detail" id="mobile-committee-detail">
+                <div class="mobile-committee-detail__meta">
+                  <span class="mobile-committee-detail__tag" id="mobile-detail-tag">03 — UNSC</span>
+                </div>
+                <h3 class="mobile-committee-detail__title" id="mobile-detail-title">Security Council</h3>
+                <p class="mobile-committee-detail__desc" id="mobile-detail-desc">
+                  The Security Council is the principal organ of the United Nations, responsible for maintaining international peace and security.
+                </p>
+                <div class="mobile-committee-detail__actions">
+                  <button type="button" class="mobile-committee-detail__cta" id="mobile-detail-cta">
+                    LEARN MORE <span class="mobile-cta-arrow">→</span>
+                  </button>
+                </div>
+                
+                <!-- Bottom Segmented Indicator Bar -->
+                <div class="mobile-committee-detail__segments" id="mobile-detail-segments" aria-hidden="true">
+                  <span class="mobile-detail-seg"></span>
+                  <span class="mobile-detail-seg"></span>
+                  <span class="mobile-detail-seg is-active"></span>
+                  <span class="mobile-detail-seg"></span>
+                  <span class="mobile-detail-seg"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Interaction Controls (Desktop & Mobile Unified) -->
+            <div class="committees-bottom">
+              <div class="committees-bottom__left">
+                <p class="committees-bottom__tagline">Five rooms. Five mandates. One conference.</p>
+                <button type="button" class="committees-bottom__link committees-explore-trigger" id="committees-explore-btn">
+                  EXPLORE COMMITTEES <span class="committees-arrow">→</span>
+                </button>
+              </div>
+
+              <div class="committees-bottom__center">
+                <div class="committees-scroll-indicator">
+                  <span class="committees-scroll-line"></span>
+                  <span class="committees-scroll-text">Scroll</span>
+                </div>
+              </div>
+
+              <div class="committees-bottom__right">
+                <div class="committees-pagination">
+                  <div class="committees-segments" aria-hidden="true">
+                    <span class="committees-segment"></span>
+                    <span class="committees-segment"></span>
+                    <span class="committees-segment is-active"></span>
+                    <span class="committees-segment"></span>
+                    <span class="committees-segment"></span>
+                  </div>
+
+                  <span class="committees-counter">
+                    <strong class="committees-counter-current">03</strong> / 05
+                  </span>
+
+                  <div class="committees-arrows">
+                    <button type="button" class="committees-btn committees-btn--prev" aria-label="Previous committee (←)">‹</button>
+                    <button type="button" class="committees-btn committees-btn--next" aria-label="Next committee (→)">›</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </section>
 
-        <section class="section" id="field">
-          <div class="section__inner">
-            <p class="section__label reveal-text">Letters — Chapter III</p>
-            <h2 class="section__heading reveal-text">From past sessions.</h2>
-            <ul class="list">
-              <li class="list__row reveal-text">
-                <span class="list__index">2326</span>
-                <span class="list__name">Letter from the Secretary-General</span>
-                <span class="list__desc">On why preparation still separates good delegates from great ones.</span>
-              </li>
-              <li class="list__row reveal-text">
-                <span class="list__index">2326</span>
-                <span class="list__name">Letter from the Security Council Chair</span>
-                <span class="list__desc">A note on the crisis architecture for this year's session.</span>
-              </li>
-              <li class="list__row reveal-text">
-                <span class="list__index">2325</span>
-                <span class="list__name">Letter from the Press Corps Director</span>
-                <span class="list__desc">On covering a conference from inside the room.</span>
-              </li>
-              <li class="list__row reveal-text">
-                <span class="list__index">2325</span>
-                <span class="list__name">Letter from the Under-Secretary-General</span>
-                <span class="list__desc">On what the academic team looks for in a background guide.</span>
-              </li>
-            </ul>
+        <section class="section team-section" id="team">
+          <span id="field" aria-hidden="true" style="position: absolute; pointer-events: none;"></span>
+          <div class="team__inner">
+            <!-- 3D Concentric Orbit Stage -->
+            <div class="team-orbit-stage">
+              <div class="team-orbit-ring team-orbit-ring--outer" aria-hidden="true"></div>
+              <div class="team-orbit-ring team-orbit-ring--middle" aria-hidden="true"></div>
+              <div class="team-orbit-ring team-orbit-ring--inner" aria-hidden="true"></div>
+
+              <!-- Navigation Arrow Controls -->
+              <button type="button" class="team-nav-btn team-nav-btn--prev" id="team-btn-prev" aria-label="Previous team member">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+
+              <button type="button" class="team-nav-btn team-nav-btn--next" id="team-btn-next" aria-label="Next team member">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+
+              <!-- Orbital Avatars Track -->
+              <div class="team-avatars-track" id="team-avatars-track"></div>
+            </div>
+
+            <!-- Member Editorial Details -->
+            <div class="team-info" id="team-info">
+              <h3 class="team-name" id="team-member-name">Mert Aydın</h3>
+              <p class="team-role" id="team-member-role">UNDER-SECRETARY-GENERAL FOR COMMITTEES</p>
+              <blockquote class="team-quote" id="team-member-quote">“Writes the study guides you actually read.”</blockquote>
+            </div>
+
+            <!-- Swipe to explore hint -->
+            <div class="team-hint">SWIPE TO EXPLORE</div>
+
+            <!-- Pagination Indicators (Dots + Golden Capsule Pill) -->
+            <div class="team-pagination" id="team-pagination" role="tablist" aria-label="Team member selection"></div>
           </div>
         </section>
 
-        <section class="section" id="approach">
+        <section class="section apply-section" id="apply">
+          <span id="approach" aria-hidden="true" style="position: absolute; pointer-events: none;"></span>
           <div class="section__inner">
-            <p class="section__label reveal-text">Apply — Chapter IV</p>
-            <h2 class="section__heading reveal-text">How to join us.</h2>
-            <ul class="list list--steps">
-              <li class="list__row reveal-text">
-                <span class="list__index">I</span>
-                <span class="list__name">Choose a committee</span>
-                <span class="list__desc">Review the guides and rank your top three preferences.</span>
-              </li>
-              <li class="list__row reveal-text">
-                <span class="list__index">II</span>
-                <span class="list__name">Submit your application</span>
-                <span class="list__desc">A short form and a position statement on your assigned topic.</span>
-              </li>
-              <li class="list__row reveal-text">
-                <span class="list__index">III</span>
-                <span class="list__name">Receive your allocation</span>
-                <span class="list__desc">Delegations are matched by committee, experience and preference.</span>
-              </li>
-              <li class="list__row reveal-text">
-                <span class="list__index">IV</span>
-                <span class="list__name">Arrive prepared</span>
-                <span class="list__desc">Registration opens the morning of the first session in Izmir.</span>
-              </li>
-            </ul>
+            <p class="section__label reveal-text">Applications — Chapter IV</p>
+            <h2 class="section__heading reveal-text">Choose your assembly track.</h2>
+            <p class="apply-section__lead reveal-text">Applications for MUNTAL 2327 are processed under rigorous academic review. Select your designated role below to complete the multi-stage accreditation dossier.</p>
+
+            <!-- 4 Application Cards Grid -->
+            <div class="apply-cards-grid" id="apply-cards-grid">
+              
+              <!-- 01 Delegate Card -->
+              <div class="apply-card apply-card--delegate apply-card-trigger reveal-text" data-track="delegate" role="button" tabindex="0" id="card-delegate">
+                <div class="apply-card__bevel"></div>
+                <div class="apply-card__badge">01 — DIPLOMATIC CORPS</div>
+                <div class="apply-card__icon" aria-hidden="true">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                </div>
+                <h3 class="apply-card__title">Delegate</h3>
+                <p class="apply-card__desc">Represent a sovereign member state, negotiate strategic resolutions, and defend foreign policy across General Assembly and Crisis cabinets.</p>
+                <div class="apply-card__specs">
+                  <span class="apply-spec-tag">GA & Crisis</span>
+                  <span class="apply-spec-tag">3-Stage Form</span>
+                  <span class="apply-spec-tag">Preferences Ranked</span>
+                </div>
+                <div class="apply-card__cta">
+                  <span>Start Application</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </div>
+              </div>
+
+              <!-- 02 Chairboard Card -->
+              <div class="apply-card apply-card--chairboard apply-card-trigger reveal-text" data-track="chairboard" role="button" tabindex="0" id="card-chairboard">
+                <div class="apply-card__bevel"></div>
+                <div class="apply-card__badge">02 — ACADEMIC & LEADERSHIP</div>
+                <div class="apply-card__icon" aria-hidden="true">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20"></path>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                </div>
+                <h3 class="apply-card__title">Chairboard</h3>
+                <p class="apply-card__desc">Direct committee parliamentary debate as a Committee Chair, or submit a unified institutional Delegation under Head Delegate leadership.</p>
+                <div class="apply-card__specs">
+                  <span class="apply-spec-tag">Bureau & Delegations</span>
+                  <span class="apply-spec-tag">Head Delegate Dossier</span>
+                  <span class="apply-spec-tag">Study Guide Review</span>
+                </div>
+                <div class="apply-card__cta">
+                  <span>Start Application</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </div>
+              </div>
+
+              <!-- 03 Press Card -->
+              <div class="apply-card apply-card--press apply-card-trigger reveal-text" data-track="press" role="button" tabindex="0" id="card-press">
+                <div class="apply-card__bevel"></div>
+                <div class="apply-card__badge">03 — JOURNALISM & MEDIA</div>
+                <div class="apply-card__icon" aria-hidden="true">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                  </svg>
+                </div>
+                <h3 class="apply-card__title">Press</h3>
+                <p class="apply-card__desc">Uncover corridor negotiations and capture historic conference visuals through photojournalism, live dispatches, and video broadcasts.</p>
+                <div class="apply-card__specs">
+                  <span class="apply-spec-tag">Photo & Video</span>
+                  <span class="apply-spec-tag">Camera Gear Spec</span>
+                  <span class="apply-spec-tag">Daily Gazette</span>
+                </div>
+                <div class="apply-card__cta">
+                  <span>Start Application</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </div>
+              </div>
+
+              <!-- 04 Admin Card -->
+              <div class="apply-card apply-card--admin apply-card-trigger reveal-text" data-track="admin" role="button" tabindex="0" id="card-admin">
+                <div class="apply-card__bevel"></div>
+                <div class="apply-card__badge">04 — OPERATIONS & LOGISTICS</div>
+                <div class="apply-card__icon" aria-hidden="true">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                  </svg>
+                </div>
+                <h3 class="apply-card__title">Admin</h3>
+                <p class="apply-card__desc">Coordinate committee floor operations, resolution distribution, crisis delivery channels, and assembly conference venue logistics.</p>
+                <div class="apply-card__specs">
+                  <span class="apply-spec-tag">Floor Operations</span>
+                  <span class="apply-spec-tag">Crisis Delivery</span>
+                  <span class="apply-spec-tag">Session Coordination</span>
+                </div>
+                <div class="apply-card__cta">
+                  <span>Start Application</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </div>
+              </div>
+
+            </div>
           </div>
         </section>
+
+        <!-- Multi-Step Application Modal -->
+        <div class="apply-modal" id="apply-modal" role="dialog" aria-modal="true" aria-labelledby="apply-modal-title">
+          <div class="apply-modal__backdrop"></div>
+          
+          <div class="apply-modal__container">
+            <!-- Modal Header -->
+            <div class="apply-modal__header">
+              <div class="apply-modal__meta">
+                <span class="apply-modal__tag" id="apply-modal-tag">01 — GENERAL ASSEMBLY & CRISIS</span>
+                <h2 class="apply-modal__title" id="apply-modal-title">Delegate Application</h2>
+              </div>
+              <button type="button" class="apply-modal__close-btn" id="apply-modal-close" aria-label="Close application modal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Progress Meter -->
+            <div class="apply-progress-meter">
+              <div class="apply-progress-track">
+                <div class="apply-progress-fill" id="apply-progress-bar" style="width: 33.3%;"></div>
+              </div>
+              <div class="apply-progress-labels">
+                <span class="apply-progress-step" id="apply-step-indicator">Step 1 of 3</span>
+                <span class="apply-progress-badge">CONFIDENTIAL DOSSIER</span>
+              </div>
+            </div>
+
+            <!-- Form Content Body -->
+            <div class="apply-modal__scrollable">
+              <!-- Interactive Step Form View -->
+              <div class="apply-form-view" id="apply-form-view">
+                <div class="apply-step-heading">
+                  <h3 class="apply-step-title" id="apply-step-title">Personal Credentials</h3>
+                  <p class="apply-step-subtitle" id="apply-step-subtitle">Basic contact and delegate identity information.</p>
+                </div>
+
+                <!-- Error Alert Box -->
+                <div class="apply-error-alert" id="apply-error-alert" role="alert" style="display: none;"></div>
+
+                <!-- Dynamic Form Controls -->
+                <div class="apply-form-body" id="apply-form-body"></div>
+
+                <!-- Form Navigation Controls -->
+                <div class="apply-nav-controls">
+                  <button type="button" class="apply-btn apply-btn--prev" id="apply-btn-prev">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Previous Step
+                  </button>
+
+                  <div class="apply-nav-controls__right">
+                    <button type="button" class="apply-btn apply-btn--next" id="apply-btn-next">
+                      Next Step
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                    
+                    <button type="button" class="apply-btn apply-btn--submit" id="apply-btn-submit" style="display: none;">
+                      Submit Application
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Success Receipt View -->
+              <div class="apply-success-view" id="apply-success-view" style="display: none;">
+                <div class="apply-success-seal" aria-hidden="true">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#dfb96c" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                </div>
+                <span class="apply-success-tag">DOSSIER REGISTERED</span>
+                <h3 class="apply-success-title">Application Submitted</h3>
+                <p class="apply-success-desc" id="apply-success-desc">Application submitted successfully. Thank you for applying to MUNTAL. Your credentials have been securely logged in the Secretariat archives.</p>
+                
+                <div class="apply-receipt-card">
+                  <div class="apply-receipt-row">
+                    <span class="apply-receipt-label">Tracking Code</span>
+                    <span class="apply-receipt-val apply-receipt-val--code" id="apply-receipt-code">MUNTAL-2327-DEL-8942</span>
+                  </div>
+                  <div class="apply-receipt-row">
+                    <span class="apply-receipt-label">Application Track</span>
+                    <span class="apply-receipt-val" id="apply-receipt-track">Delegate Application</span>
+                  </div>
+                  <div class="apply-receipt-row">
+                    <span class="apply-receipt-label">Destination Sheet</span>
+                    <span class="apply-receipt-val" id="apply-receipt-sheet" style="color: #dfb96c;">Delegate Application</span>
+                  </div>
+                  <div class="apply-receipt-row">
+                    <span class="apply-receipt-label">Review Status</span>
+                    <span class="apply-receipt-val" style="color: #4ade80;">Under Rolling Review</span>
+                  </div>
+                </div>
+
+                <div class="apply-success-actions">
+                  <button type="button" class="apply-btn apply-btn--done" id="apply-success-close">Return to Conference Site</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <section class="section section--contact" id="conversation">
           <div class="section__inner">
@@ -187,6 +520,16 @@
 
       </div>
     </main>
+
+    <!-- Committee In-Depth Dossier Modal -->
+    <div class="committee-modal" id="committee-dossier-modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="committee-modal__overlay"></div>
+      <div class="committee-modal__card">
+        <button type="button" class="committee-modal__close" id="committee-dossier-close" aria-label="Close dossier">✕</button>
+        <div id="committee-dossier-content" class="committee-modal__inner"></div>
+      </div>
+    </div>
+
     <script type="module" src="/src/script.js"></script>
   </body>
 </html>
