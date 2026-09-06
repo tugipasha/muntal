@@ -385,8 +385,37 @@ export function initApply() {
 
     renderCurrentStep();
 
+    // Close mobile nav drawer if open
+    const mobileDrawer = document.getElementById('mobile-nav-drawer');
+    if (mobileDrawer && mobileDrawer.classList.contains('is-open')) {
+      mobileDrawer.classList.remove('is-open');
+      const burger = document.getElementById('nav-burger');
+      if (burger) burger.setAttribute('aria-expanded', 'false');
+    }
+
     modal.classList.add('is-open');
+    document.body.classList.add('apply-modal-open');
     document.body.style.overflow = 'hidden';
+
+    // Pause Lenis smooth scroll while modal is active
+    if (window.lenis) {
+      window.lenis.stop();
+    }
+
+    // Attach passive wheel/touch isolation so modal scroll operates natively
+    const scrollContainer = modal.querySelector('.apply-modal__scrollable');
+    if (scrollContainer) {
+      scrollContainer.scrollTop = 0;
+      if (!scrollContainer.dataset.scrollBound) {
+        scrollContainer.dataset.scrollBound = 'true';
+        scrollContainer.addEventListener('wheel', (e) => {
+          e.stopPropagation();
+        }, { passive: true });
+        scrollContainer.addEventListener('touchmove', (e) => {
+          e.stopPropagation();
+        }, { passive: true });
+      }
+    }
 
     // Animate modal entry
     const container = modal.querySelector('.apply-modal__container');
@@ -407,7 +436,12 @@ export function initApply() {
       ease: 'power2.in',
       onComplete: () => {
         modal.classList.remove('is-open');
+        document.body.classList.remove('apply-modal-open');
         document.body.style.overflow = '';
+        // Resume Lenis smooth scroll
+        if (window.lenis) {
+          window.lenis.start();
+        }
       }
     });
   }

@@ -85,6 +85,17 @@ ul {
   justify-content: space-between;
   padding: clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px);
   mix-blend-mode: difference;
+  transition: opacity 0.28s ease, visibility 0.28s ease, transform 0.28s ease;
+}
+
+/* Hide header navigation completely when application modal is open */
+body.apply-modal-open .nav,
+body:has(#apply-modal.is-open) .nav,
+body:has(.committee-modal.is-open) .nav {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(-8px);
 }
 
 .nav__mark {
@@ -2512,6 +2523,9 @@ ul {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -2525,18 +2539,19 @@ ul {
 }
 
 .apply-modal__backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: rgba(2, 6, 17, 0.82);
+  background: rgba(2, 6, 17, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
 .apply-modal__container {
   position: relative;
-  width: 92%;
+  width: 100%;
   max-width: 680px;
-  max-height: 88vh;
+  max-height: min(88vh, 820px);
+  margin: auto;
   background: #091222;
   border: 1px solid rgba(223, 185, 108, 0.25);
   border-radius: 14px;
@@ -2549,6 +2564,7 @@ ul {
 
 /* Modal Header */
 .apply-modal__header {
+  flex-shrink: 0;
   padding: 24px 28px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
@@ -2599,6 +2615,7 @@ ul {
 
 /* Progress Meter */
 .apply-progress-meter {
+  flex-shrink: 0;
   padding: 16px 28px 12px;
   background: rgba(6, 12, 22, 0.5);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -2644,9 +2661,34 @@ ul {
 
 /* Scrollable Form Body */
 .apply-modal__scrollable {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 28px;
   overflow-y: auto;
-  max-height: calc(88vh - 170px);
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(223, 185, 108, 0.35) rgba(6, 12, 22, 0.4);
+}
+
+.apply-modal__scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.apply-modal__scrollable::-webkit-scrollbar-track {
+  background: rgba(6, 12, 22, 0.4);
+  border-radius: 3px;
+}
+
+.apply-modal__scrollable::-webkit-scrollbar-thumb {
+  background: rgba(223, 185, 108, 0.35);
+  border-radius: 3px;
+}
+
+.apply-modal__scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(223, 185, 108, 0.6);
 }
 
 .apply-step-heading {
@@ -3037,20 +3079,30 @@ ul {
 }
 
 @media (max-width: 640px) {
-  .apply-modal__container {
-    width: 95%;
-    max-height: 92vh;
+  .apply-modal {
+    padding: 12px 8px;
   }
 
-  .apply-modal__header,
-  .apply-progress-meter,
+  .apply-modal__container {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 12px;
+  }
+
+  .apply-modal__header {
+    padding: 18px 18px 14px;
+  }
+
+  .apply-progress-meter {
+    padding: 12px 18px 10px;
+  }
+
   .apply-modal__scrollable {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding: 18px 18px 24px;
   }
 
   .apply-modal__title {
-    font-size: 22px;
+    font-size: 21px;
   }
 }
 

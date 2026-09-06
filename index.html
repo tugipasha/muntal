@@ -384,10 +384,10 @@
         </section>
 
         <!-- Multi-Step Application Modal -->
-        <div class="apply-modal" id="apply-modal" role="dialog" aria-modal="true" aria-labelledby="apply-modal-title">
+        <div class="apply-modal" id="apply-modal" role="dialog" aria-modal="true" aria-labelledby="apply-modal-title" data-lenis-prevent="true">
           <div class="apply-modal__backdrop"></div>
           
-          <div class="apply-modal__container">
+          <div class="apply-modal__container" data-lenis-prevent="true">
             <!-- Modal Header -->
             <div class="apply-modal__header">
               <div class="apply-modal__meta">
@@ -414,7 +414,7 @@
             </div>
 
             <!-- Form Content Body -->
-            <div class="apply-modal__scrollable">
+            <div class="apply-modal__scrollable" data-lenis-prevent="true">
               <!-- Interactive Step Form View -->
               <div class="apply-form-view" id="apply-form-view">
                 <div class="apply-step-heading">
@@ -522,11 +522,11 @@
     </main>
 
     <!-- Committee In-Depth Dossier Modal -->
-    <div class="committee-modal" id="committee-dossier-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="committee-modal" id="committee-dossier-modal" role="dialog" aria-modal="true" aria-hidden="true" data-lenis-prevent="true">
       <div class="committee-modal__overlay"></div>
-      <div class="committee-modal__card">
+      <div class="committee-modal__card" data-lenis-prevent="true">
         <button type="button" class="committee-modal__close" id="committee-dossier-close" aria-label="Close dossier">✕</button>
-        <div id="committee-dossier-content" class="committee-modal__inner"></div>
+        <div id="committee-dossier-content" class="committee-modal__inner" data-lenis-prevent="true"></div>
       </div>
     </div>
 

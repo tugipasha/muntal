@@ -422,12 +422,14 @@ export function initCommittees() {
 
     dossierModal.classList.add('is-open');
     document.body.style.overflow = 'hidden';
+    if (window.lenis) window.lenis.stop();
   }
 
   function closeDossier() {
     if (!dossierModal) return;
     dossierModal.classList.remove('is-open');
     document.body.style.overflow = '';
+    if (window.lenis) window.lenis.start();
   }
 
   // Setup Initial Render
