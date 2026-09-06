@@ -9,15 +9,27 @@ import { initApply } from './apply.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
+// =========================================================================
+// 🎛️ ARKADAKİ KARTLARIN BOYUTU (CARD SIZE SCALE)
+// Bu tek değeri değiştirerek arkada dönen tüm kartların büyüklüğünü ayarlayabilirsiniz:
+//   1.0   -> Orijinal / Standart boyut
+//   1.15  -> Şu anki hafif büyütülmüş boyut
+//   1.25  -> Orta-büyük boyut
+//   1.40  -> Büyük boyut
+//   0.85  -> Küçük boyut
+// =========================================================================
+export const CARD_SCALE = 1.15;
+
 const CONFIG = {
+  cardScale: CARD_SCALE, // <--- Tek değer kontrolü
   totalImages: 10,
   tilesPerRevolution: 15,
   revolutions: 5,
-  startRadius: 5,
-  endRadius: 3.5,
-  tileHeightRatio: 1.1,
+  baseStartRadius: 5.0,
+  baseEndRadius: 3.5,
+  tileHeightRatio: 1.16,
   tileSegments: 24,
-  spiralGap: 0.35,
+  baseSpiralGap: 0.35,
   tileOverlap: 0.005,
   cameraZ: 12,
   cameraSmoothing: 0.075,
@@ -28,7 +40,7 @@ const CONFIG = {
   cameraYMultiplier: 0.2,
   parallaxStrength: 0.1,
   spiralOffsetY: -2.0,
-  mobileTileScale: 0.7, // < 1 shrinks the rotating tiles on mobile only; tweak this to taste
+  mobileTileScale: 0.8,
 };
 
 const state = {
@@ -202,6 +214,19 @@ function initHero() {
   loadTextures(renderer).then((textures) => {
     buildSpiral(spiral, textures, camera);
     renderer.domElement.style.opacity = 1;
+
+    // Tarayıcı konsolundan anında test etmek için: setCardScale(1.3)
+    window.setCardScale = (newScale) => {
+      CONFIG.cardScale = Number(newScale) || 1.0;
+      while (spiral.children.length > 0) {
+        const obj = spiral.children[0];
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) obj.material.dispose();
+        spiral.remove(obj);
+      }
+      buildSpiral(spiral, textures, camera);
+      console.log(`[MUNTAL] Kart büyüklüğü güncellendi: ${CONFIG.cardScale}`);
+    };
   });
 
   // Mouse parallax (desktop only)
@@ -254,17 +279,22 @@ function initHero() {
 }
 
 function buildSpiral(spiral, textures, camera) {
+  const scale = CONFIG.cardScale || 1.0;
+  const startRadius = CONFIG.baseStartRadius * scale;
+  const endRadius = CONFIG.baseEndRadius * scale;
+  const spiralGap = CONFIG.baseSpiralGap * scale;
+
   const totalTiles = CONFIG.tilesPerRevolution * CONFIG.revolutions;
   const angleStep = (Math.PI * 2) / CONFIG.tilesPerRevolution;
   const arcAngle = angleStep + CONFIG.tileOverlap;
-  const chord = 2 * CONFIG.startRadius * Math.sin(angleStep / 2);
+  const chord = 2 * startRadius * Math.sin(angleStep / 2);
   const tileHeight = chord * CONFIG.tileHeightRatio;
 
-  const startY = (totalTiles * CONFIG.spiralGap) / 2;
+  const startY = (totalTiles * spiralGap) / 2;
 
   for (let i = 0; i < totalTiles; i++) {
     const t = i / (totalTiles - 1);
-    const radius = THREE.MathUtils.lerp(CONFIG.startRadius, CONFIG.endRadius, t);
+    const radius = THREE.MathUtils.lerp(startRadius, endRadius, t);
 
     const geometry = createCurvedTileGeometry(radius, arcAngle, tileHeight, CONFIG.tileSegments);
     const texture = textures[i % CONFIG.totalImages];
@@ -281,7 +311,7 @@ function buildSpiral(spiral, textures, camera) {
     });
 
     const tile = new THREE.Mesh(geometry, material);
-    tile.position.y = startY - i * CONFIG.spiralGap;
+    tile.position.y = startY - i * spiralGap;
     tile.rotation.y = i * angleStep;
     if (state.isMobile) tile.scale.setScalar(CONFIG.mobileTileScale);
     spiral.add(tile);

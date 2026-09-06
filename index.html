@@ -24,10 +24,6 @@
         <a href="#apply">Apply</a>
       </nav>
       <div class="nav__actions">
-        <div class="nav__status">
-          <span class="nav__dot"></span>
-          Applications open
-        </div>
         <button class="nav__burger" id="nav-burger" type="button" aria-label="Toggle mobile menu" aria-expanded="false">
           <span class="nav__burger-bar"></span>
           <span class="nav__burger-bar"></span>
@@ -61,17 +57,16 @@
       <section class="hero" id="hero">
         <div class="hero__topbar">
           <span class="hero__topbar-spacer"></span>
-          <span class="hero__topbar-center">Munta, 2327</span>
+          <span class="hero__topbar-center"></span>
           <span class="hero__topbar-spacer"></span>
         </div>
         <div class="hero__core">
           <h1 class="hero__title hero__title--brand">MUNTAL</h1>
         </div>
         <div class="hero__bottom">
-          <p class="hero__caption">A forum for delegates who debate with preparation, speak with purpose, and draft resolutions that matter.</p>
-          <div class="hero__scroll">
+          <span class="hero__bottom-spacer"></span>
+          <div class="hero__scroll" aria-hidden="true">
             <span class="hero__scroll-line"></span>
-            Scroll
           </div>
           <p class="hero__signoff">Izmir, Türkiye · 23–29 March 2327<br />Posel United Nations Conference</p>
         </div>
@@ -289,13 +284,6 @@
               <div class="apply-card apply-card--delegate apply-card-trigger reveal-text" data-track="delegate" role="button" tabindex="0" id="card-delegate">
                 <div class="apply-card__bevel"></div>
                 <div class="apply-card__badge">01 — DIPLOMATIC CORPS</div>
-                <div class="apply-card__icon" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                  </svg>
-                </div>
                 <h3 class="apply-card__title">Delegate</h3>
                 <p class="apply-card__desc">Represent a sovereign member state, negotiate strategic resolutions, and defend foreign policy across General Assembly and Crisis cabinets.</p>
                 <div class="apply-card__specs">
@@ -309,17 +297,11 @@
                 </div>
               </div>
 
-              <!-- 02 Chairboard Card -->
+              <!-- 02 Delegation Card -->
               <div class="apply-card apply-card--chairboard apply-card-trigger reveal-text" data-track="chairboard" role="button" tabindex="0" id="card-chairboard">
                 <div class="apply-card__bevel"></div>
                 <div class="apply-card__badge">02 — ACADEMIC & LEADERSHIP</div>
-                <div class="apply-card__icon" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2v20"></path>
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                  </svg>
-                </div>
-                <h3 class="apply-card__title">Chairboard</h3>
+                <h3 class="apply-card__title">Delegation</h3>
                 <p class="apply-card__desc">Direct committee parliamentary debate as a Committee Chair, or submit a unified institutional Delegation under Head Delegate leadership.</p>
                 <div class="apply-card__specs">
                   <span class="apply-spec-tag">Bureau & Delegations</span>
@@ -336,12 +318,6 @@
               <div class="apply-card apply-card--press apply-card-trigger reveal-text" data-track="press" role="button" tabindex="0" id="card-press">
                 <div class="apply-card__bevel"></div>
                 <div class="apply-card__badge">03 — JOURNALISM & MEDIA</div>
-                <div class="apply-card__icon" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
-                  </svg>
-                </div>
                 <h3 class="apply-card__title">Press</h3>
                 <p class="apply-card__desc">Uncover corridor negotiations and capture historic conference visuals through photojournalism, live dispatches, and video broadcasts.</p>
                 <div class="apply-card__specs">
@@ -359,13 +335,6 @@
               <div class="apply-card apply-card--admin apply-card-trigger reveal-text" data-track="admin" role="button" tabindex="0" id="card-admin">
                 <div class="apply-card__bevel"></div>
                 <div class="apply-card__badge">04 — OPERATIONS & LOGISTICS</div>
-                <div class="apply-card__icon" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                  </svg>
-                </div>
                 <h3 class="apply-card__title">Admin</h3>
                 <p class="apply-card__desc">Coordinate committee floor operations, resolution distribution, crisis delivery channels, and assembly conference venue logistics.</p>
                 <div class="apply-card__specs">

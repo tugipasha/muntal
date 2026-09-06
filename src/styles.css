@@ -2401,7 +2401,7 @@ body:has(.committee-modal.is-open) .nav {
   letter-spacing: 0.16em;
   color: #dfb96c;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   overflow-wrap: break-word;
   word-break: break-word;
 }
