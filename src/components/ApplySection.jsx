@@ -12,12 +12,12 @@ export default function ApplySection({ onOpenApply }) {
       cardClass: 'apply-card--delegate',
     },
     {
-      id: 'chairboard',
-      badge: '02 — ACADEMIC & LEADERSHIP',
+      id: 'delegation',
+      badge: '02 — ACADEMIC & DELEGATIONS',
       title: 'Delegation',
       desc: 'Direct committee parliamentary debate as a Committee Chair, or submit a unified institutional Delegation under Head Delegate leadership.',
       specs: ['Bureau & Delegations', 'Head Delegate Dossier', 'Study Guide Review'],
-      cardClass: 'apply-card--chairboard',
+      cardClass: 'apply-card--delegation',
     },
     {
       id: 'press',

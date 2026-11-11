@@ -6,8 +6,10 @@ export const COMMITTEE_OPTIONS = [
   { value: 'DISEC', label: '01 DISEC — Disarmament & International Security' },
   { value: 'WHO', label: '02 WHO — World Health Organization' },
   { value: 'UNSC', label: '03 UNSC — United Nations Security Council' },
-  { value: 'NATO-NAC', label: '04 NATO-NAC — North Atlantic Council' },
-  { value: 'JCC', label: '05 JCC — Joint Crisis Cabinet: 1962 Cuban Missile' }
+  { value: 'UNHRC', label: '04 UNHRC — Human Rights Council' },
+  { value: 'ECOFIN', label: '05 ECOFIN — Economic & Financial Affairs' },
+  { value: 'NATO-NAC', label: '06 NATO-NAC — North Atlantic Council' },
+  { value: 'JCC', label: '07 JCC — Joint Crisis Cabinet: 1962 Cuban Missile' }
 ];
 
 export const GRADE_OPTIONS = [

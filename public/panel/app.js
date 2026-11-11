@@ -19,8 +19,10 @@
     '01 DISEC (Disarmament & International Security)',
     '02 WHO (World Health Organization)',
     '03 UNSC (United Nations Security Council)',
-    '04 NATO-NAC (North Atlantic Council)',
-    '05 JCC (Joint Crisis Committee)'
+    '04 UNHRC (Human Rights Council)',
+    '05 ECOFIN (Economic & Financial Affairs)',
+    '06 NATO-NAC (North Atlantic Council)',
+    '07 JCC (Joint Crisis Committee)'
   ];
 
   // Pre-built English Email Templates
@@ -1748,18 +1750,31 @@ function json_(data) {
     feedback.textContent = 'Testing connection...';
     feedback.style.color = 'var(--text-muted)';
 
+    const inputUrl = document.getElementById('setting-url').value.trim();
+    if (!inputUrl || !inputUrl.startsWith('https://script.google.com/macros/s/')) {
+      feedback.textContent = '⚠️ Invalid URL. Must start with https://script.google.com/macros/s/... and end in /exec';
+      feedback.style.color = 'var(--status-rejected)';
+      return;
+    }
+
     try {
-      const res = await fetch(`${document.getElementById('setting-url').value.trim()}?action=getApplications&t=${Date.now()}`);
+      const res = await fetch(`${inputUrl}?action=getApplications&t=${Date.now()}`);
       if (res.ok) {
         feedback.textContent = '✓ Google Apps Script endpoint is online and responsive!';
         feedback.style.color = 'var(--status-accepted)';
+      } else if (res.status === 404) {
+        feedback.textContent = '❌ Endpoint returned 404 (Not Found). Deployment was deleted or URL is mistyped.';
+        feedback.style.color = 'var(--status-rejected)';
+      } else if (res.status === 403) {
+        feedback.textContent = '❌ Endpoint returned 403 (Forbidden). In Apps Script, set "Who has access" to "Anyone".';
+        feedback.style.color = 'var(--status-rejected)';
       } else {
         feedback.textContent = `Endpoint returned status HTTP ${res.status}`;
         feedback.style.color = 'var(--status-rejected)';
       }
     } catch (e) {
-      feedback.textContent = '✓ URL is reachable (Note: Browser CORS redirect is normal for Apps Script).';
-      feedback.style.color = 'var(--text)';
+      feedback.textContent = '⚠️ Connection blocked by CORS or 404. Verify in Apps Script: Execute as "Me", Who has access: "Anyone".';
+      feedback.style.color = 'var(--status-pending)';
     }
   }
 

@@ -1,6 +1,7 @@
 /*******************************************************
- * MUNTAL — GOOGLE SHEETS INTEGRATION & API
- * 4 Application Tracks: Delegate, Chairboard, Admin, Press
+ * MUNTAL 2327 — GOOGLE SHEETS INTEGRATION
+ * 4 ayrı başvuru sayfası:
+ * Delegate, Delegation, Admin, Press
  *******************************************************/
 
 const CONFIG = {
@@ -23,8 +24,8 @@ const CONFIG = {
     ]
   },
 
-  chairboard: {
-    sheetName: "Chairboard",
+  delegation: {
+    sheetName: "Delegation",
     applicationTypes: ["delegation", "chairboard"],
     fields: [
       ["head_delegate_full_name", "Head Delegate’s Full Name", "text", true],
@@ -80,18 +81,23 @@ const CONFIG = {
   }
 };
 
+// Backwards compatibility alias
+CONFIG.chairboard = CONFIG.delegation;
+
 const SYSTEM_COLUMNS = ["Submitted At", "Application ID", "Status", "Assigned Committee", "Notes"];
 
 /*******************************************************
  * 1. SHEETS SETUP
+ * Bu fonksiyon bir kez çalıştırılmalıdır.
  *******************************************************/
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  Object.keys(CONFIG).forEach(function(key) {
+  const primaryKeys = ["delegate", "delegation", "admin", "press"];
+  primaryKeys.forEach(function(key) {
     const cfg = CONFIG[key];
-    let sheet = ss.getSheetByName(cfg.sheetName);
 
+    let sheet = ss.getSheetByName(cfg.sheetName);
     if (!sheet) {
       sheet = ss.insertSheet(cfg.sheetName);
     }
@@ -104,128 +110,79 @@ function setupSheets() {
       headers.push(col);
     });
 
+    // Başlıkları oluştur.
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+    // Başlık tasarımı.
     styleHeader_(sheet, headers.length);
+
+    // İlk satırı sabitle.
     sheet.setFrozenRows(1);
 
+    // Önceki filtre varsa kaldır.
     const existingFilter = sheet.getFilter();
     if (existingFilter) {
       existingFilter.remove();
     }
+
+    // Filtre ekle.
     sheet.getRange(1, 1, 1, headers.length).createFilter();
 
+    // Sütun genişlikleri ve soru açıklamaları.
     cfg.fields.forEach(function(field, index) {
-      const note = "Field ID: " + field[0] + "\nType: " + field[2] + "\nRequired: " + (field[3] ? "Yes" : "No");
+      const note =
+        "Field ID: " + field[0] +
+        "\nType: " + field[2] +
+        "\nRequired: " + (field[3] ? "Yes" : "No");
+
       sheet.getRange(1, index + 1).setNote(note);
-      sheet.setColumnWidth(index + 1, Math.min(Math.max(field[1].length * 7 + 24, 150), 320));
+
+      sheet.setColumnWidth(
+        index + 1,
+        Math.min(
+          Math.max(field[1].length * 7 + 24, 150),
+          350
+        )
+      );
     });
 
     sheet.setColumnWidth(headers.length - 4, 170); // Submitted At
-    sheet.setColumnWidth(headers.length - 3, 170); // Application ID
+    sheet.setColumnWidth(headers.length - 3, 160); // Application ID
     sheet.setColumnWidth(headers.length - 2, 130); // Status
-    sheet.setColumnWidth(headers.length - 1, 170); // Assigned Committee
-    sheet.setColumnWidth(headers.length, 250);     // Notes
+    sheet.setColumnWidth(headers.length - 1, 160); // Assigned Committee
+    sheet.setColumnWidth(headers.length, 200);     // Notes
   });
 
-  let emailSheet = ss.getSheetByName("Email Logs");
-  if (!emailSheet) {
-    emailSheet = ss.insertSheet("Email Logs");
-    const emailHeaders = ["Timestamp", "Recipient Email", "Recipient Name", "Subject", "Status", "Error / Details"];
-    emailSheet.getRange(1, 1, 1, emailHeaders.length).setValues([emailHeaders]);
-    styleHeader_(emailSheet, emailHeaders.length);
-    emailSheet.setFrozenRows(1);
-  }
-
-  return "MUNTAL Sheets setup completed successfully!";
-}
-
-/**
- * Run this function once in Apps Script editor to authorize email permissions:
- */
-function authorizeEmailAccess() {
-  const email = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail();
-  if (email) {
-    MailApp.sendEmail(email, "MUNTAL Email Authorization Test", "Google Apps Script email dispatch has been successfully authorized!");
-    Logger.log("Authorization test email sent to: " + email);
-  }
+  return "MUNTAL Sheets successfully created!";
 }
 
 /*******************************************************
- * 2. GET REQUEST — Live Application Retrieval
- *******************************************************/
-function doGet(e) {
-  try {
-    const action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action).trim() : "getApplications";
-
-    if (action === "ping" || action === "test") {
-      return json_({
-        success: true,
-        version: "v2",
-        email_ready: true,
-        message: "MUNTAL Google Apps Script API v2 is running with Email Dispatch enabled!"
-      });
-    }
-
-    if (action === "stats") {
-      return json_(getSummaryStats_());
-    }
-
-    if (action === "getEmailLogs") {
-      return json_(getEmailLogs_());
-    }
-
-    if (action === "sendEmail") {
-      return handleSendEmail_(e.parameter || {});
-    }
-
-    if (action === "updateStatus") {
-      return handleUpdateStatus_(e.parameter || {});
-    }
-
-    const apps = getAllApplications_();
-
-    return json_({
-      success: true,
-      message: "Applications successfully fetched.",
-      count: apps.length,
-      applications: apps,
-      tabs: Object.keys(CONFIG).map(function(k) { return CONFIG[k].sheetName; }),
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    return json_({
-      success: false,
-      message: String(error.message || error),
-      applications: []
-    });
-  }
-}
-
-/*******************************************************
- * 3. POST REQUEST — Save Submissions, Update Status & Send Emails
+ * 2. WEBSITE POST REQUEST
+ * Siteden gelen başvuruları kaydeder.
  *******************************************************/
 function doPost(e) {
   const lock = LockService.getScriptLock();
 
   try {
-    lock.waitLock(25000);
+    lock.waitLock(20000);
 
     const data = readPayload_(e);
     const action = String(data.action || "").trim();
 
-    // A. Update Status & Assigned Committee
+    // Portal action: Status update
     if (action === "updateStatus") {
       return handleUpdateStatus_(data);
     }
 
-    // B. Direct Email Dispatch
+    // Portal action: Email dispatch
     if (action === "sendEmail") {
       return handleSendEmail_(data);
     }
 
-    // C. Save New Application from Website
-    const applicationType = String(data.application_type || "").toLowerCase();
+    const applicationType = String(
+      data.application_type || ""
+    ).toLowerCase();
+
     const cfg = findConfig_(applicationType);
 
     if (!cfg) {
@@ -238,33 +195,45 @@ function doPost(e) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = ss.getSheetByName(cfg.sheetName);
 
+    // Sekme yoksa oluştur.
     if (!sheet) {
       sheet = ss.insertSheet(cfg.sheetName);
-      const headers = cfg.fields.map(function(f) { return f[1]; });
-      SYSTEM_COLUMNS.forEach(function(c) { headers.push(c); });
+      const headers = cfg.fields.map(function(field) { return field[1]; });
+      SYSTEM_COLUMNS.forEach(function(col) { headers.push(col); });
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       styleHeader_(sheet, headers.length);
       sheet.setFrozenRows(1);
     }
 
+    // Form cevaplarını ilgili sütunlara yerleştir.
     const values = cfg.fields.map(function(field) {
-      const val = data[field[0]];
-      if (val === undefined || val === null) return "";
-      if (Array.isArray(val)) return val.join(", ");
-      if (typeof val === "object") return JSON.stringify(val);
-      return String(val);
+      const value = data[field[0]];
+      if (value === undefined || value === null) {
+        return "";
+      }
+      if (Array.isArray(value)) {
+        return value.join(", ");
+      }
+      if (typeof value === "object") {
+        return JSON.stringify(value);
+      }
+      return String(value);
     });
 
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const applicationId = data.application_id || data.tracking_code ||
-      ("MUNTAL-" + cfg.sheetName.substring(0, 3).toUpperCase() + "-" + randomSuffix);
+    // Otomatik başvuru numarası (payload'da iletilmişse aynısını korur).
+    const applicationId =
+      data.application_id ||
+      data.tracking_code ||
+      ("MUNTAL-" + Utilities.getUuid().slice(0, 8).toUpperCase());
 
-    values.push(new Date());                            // Submitted At
-    values.push(applicationId);                         // Application ID
-    values.push(data.status || "Pending");              // Status
-    values.push(data.assigned_committee || data.first_committee_preference || ""); // Assigned Committee
-    values.push(data.notes || "");                      // Notes
+    // Tarih, ID ve sistem sütunları.
+    values.push(new Date());
+    values.push(applicationId);
+    values.push("Pending");
+    values.push(data.assigned_committee || "");
+    values.push(data.notes || "");
 
+    // Yeni başvuruyu kaydet.
     sheet.appendRow(values);
 
     return json_({
@@ -281,48 +250,134 @@ function doPost(e) {
   } finally {
     try {
       lock.releaseLock();
-    } catch (err) {}
+    } catch (error) {}
   }
 }
 
 /*******************************************************
- * 4. HELPER DATA FUNCTIONS
+ * 3. GET REQUEST
+ * API kontrolü ve Sekretarya Paneli senkronizasyonu
  *******************************************************/
+function doGet(e) {
+  const action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action).trim() : "";
 
+  // Sekretarya paneli veri çekme
+  if (action === "getApplications") {
+    try {
+      const apps = getAllApplications_();
+      return json_({
+        success: true,
+        count: apps.length,
+        applications: apps,
+        tabs: ["Delegate", "Delegation", "Admin", "Press"],
+        timestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      return json_({
+        success: false,
+        message: String(err.message || err),
+        applications: []
+      });
+    }
+  }
+
+  if (action === "ping" || action === "test") {
+    return json_({
+      success: true,
+      version: "2327",
+      message: "MUNTAL Google Sheets API is running!"
+    });
+  }
+
+  // Varsayılan kontrol yanıtı
+  return json_({
+    success: true,
+    message: "MUNTAL Google Sheets API is running!",
+    tabs: ["Delegate", "Delegation", "Admin", "Press"]
+  });
+}
+
+/*******************************************************
+ * 4. PAYLOAD READER
+ *******************************************************/
+function readPayload_(e) {
+  if (e && e.postData && e.postData.contents) {
+    return JSON.parse(e.postData.contents);
+  }
+  if (e && e.parameter) {
+    return e.parameter;
+  }
+  throw new Error("No application payload received.");
+}
+
+/*******************************************************
+ * 5. APPLICATION TYPE DETECTION
+ *******************************************************/
+function findConfig_(applicationType) {
+  const keys = Object.keys(CONFIG);
+  for (let i = 0; i < keys.length; i++) {
+    const cfg = CONFIG[keys[i]];
+    if (cfg.applicationTypes.indexOf(applicationType) !== -1) {
+      return cfg;
+    }
+  }
+  return null;
+}
+
+/*******************************************************
+ * 6. HEADER DESIGN
+ *******************************************************/
+function styleHeader_(sheet, columnCount) {
+  const range = sheet.getRange(1, 1, 1, columnCount);
+  range
+    .setBackground("#14243A")
+    .setFontColor("#FFFFFF")
+    .setFontWeight("bold")
+    .setWrap(true)
+    .setVerticalAlignment("middle")
+    .setHorizontalAlignment("center");
+  sheet.setRowHeight(1, 50);
+}
+
+/*******************************************************
+ * 7. JSON RESPONSE
+ *******************************************************/
+function json_(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/*******************************************************
+ * 8. LIVE APPLICATIONS RETRIEVAL FOR SECRETARIAT PANEL
+ *******************************************************/
 function getAllApplications_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const allApps = [];
+  const primaryKeys = ["delegate", "delegation", "admin", "press"];
 
-  Object.keys(CONFIG).forEach(function(key) {
+  primaryKeys.forEach(function(key) {
     const cfg = CONFIG[key];
     const sheet = ss.getSheetByName(cfg.sheetName);
     if (!sheet) return;
 
     const lastRow = sheet.getLastRow();
     const lastCol = sheet.getLastColumn();
-    if (lastRow < 2 || lastCol < 1) return;
+    if (lastRow < 2) return;
 
     const data = sheet.getRange(1, 1, lastRow, lastCol).getValues();
-    const headers = data[0];
-
+    const headers = data[0].map(function(h) { return String(h).trim().toLowerCase(); });
     const headerIndex = {};
-    headers.forEach(function(h, idx) {
-      headerIndex[String(h).trim().toLowerCase()] = idx;
-    });
+    headers.forEach(function(h, idx) { headerIndex[h] = idx; });
 
     for (let r = 1; r < data.length; r++) {
       const row = data[r];
-      const hasContent = row.some(function(cell) { return cell !== "" && cell !== null && cell !== undefined; });
-      if (!hasContent) continue;
-
       const app = {
-        row_index: r + 1,
         sheet_name: cfg.sheetName,
         category: cfg.sheetName.toLowerCase(),
         category_title: cfg.sheetName
       };
 
-      // Read configured fields
       cfg.fields.forEach(function(field) {
         const fieldKey = field[0];
         const fieldLabel = field[1].trim().toLowerCase();
@@ -330,7 +385,6 @@ function getAllApplications_() {
         app[fieldKey] = (idx !== undefined && row[idx] !== undefined) ? String(row[idx]) : "";
       });
 
-      // System Columns
       const submittedAtIdx = headerIndex["submitted at"];
       const appIdIdx = headerIndex["application id"];
       const statusIdx = headerIndex["status"];
@@ -343,26 +397,16 @@ function getAllApplications_() {
       app.assigned_committee = (assignedCommIdx !== undefined && row[assignedCommIdx]) ? String(row[assignedCommIdx]).trim() : "";
       app.notes = (notesIdx !== undefined && row[notesIdx]) ? String(row[notesIdx]) : "";
 
-      // Standard aliases
       app.name = app.name_surname || app.head_delegate_full_name || app.full_name || "Applicant";
       app.email = app.email || app.head_delegate_email || "";
       app.phone = app.phone || app.head_delegate_phone || "";
       app.school = app.school || app.school_name || "—";
-      
-      // All 3 committee preferences
       app.first_committee_preference = app.first_committee_preference || "";
       app.second_committee_preference = app.second_committee_preference || "";
       app.third_committee_preference = app.third_committee_preference || "";
-      app.committee_pref = app.assigned_committee || app.first_committee_preference || "—";
 
       allApps.push(app);
     }
-  });
-
-  allApps.sort(function(a, b) {
-    const da = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
-    const db = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
-    return db - da;
   });
 
   return allApps;
@@ -374,14 +418,13 @@ function handleUpdateStatus_(data) {
   const newCommittee = data.assigned_committee !== undefined ? String(data.assigned_committee).trim() : null;
   const newNotes = data.notes !== undefined ? String(data.notes) : null;
 
-  if (!targetId) {
-    return json_({ success: false, message: "application_id is required." });
-  }
+  if (!targetId) return json_({ success: false, message: "application_id is required." });
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let found = false;
+  const primaryKeys = ["delegate", "delegation", "admin", "press"];
 
-  Object.keys(CONFIG).forEach(function(key) {
+  primaryKeys.forEach(function(key) {
     if (found) return;
     const cfg = CONFIG[key];
     const sheet = ss.getSheetByName(cfg.sheetName);
@@ -392,10 +435,7 @@ function handleUpdateStatus_(data) {
     if (lastRow < 2) return;
 
     const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-    let appIdCol = -1;
-    let statusCol = -1;
-    let assignedCommCol = -1;
-    let notesCol = -1;
+    let appIdCol = -1, statusCol = -1, assignedCommCol = -1, notesCol = -1;
 
     headers.forEach(function(h, idx) {
       const lower = String(h).trim().toLowerCase();
@@ -407,54 +447,24 @@ function handleUpdateStatus_(data) {
 
     if (appIdCol === -1) return;
 
-    let colCounter = lastCol;
-    if (statusCol === -1) {
-      colCounter++;
-      statusCol = colCounter;
-      sheet.getRange(1, statusCol).setValue("Status");
-      styleHeader_(sheet, statusCol);
-    }
-    if (assignedCommCol === -1) {
-      colCounter++;
-      assignedCommCol = colCounter;
-      sheet.getRange(1, assignedCommCol).setValue("Assigned Committee");
-      styleHeader_(sheet, assignedCommCol);
-    }
-    if (notesCol === -1) {
-      colCounter++;
-      notesCol = colCounter;
-      sheet.getRange(1, notesCol).setValue("Notes");
-      styleHeader_(sheet, notesCol);
-    }
-
-    const idRangeValues = sheet.getRange(2, appIdCol, lastRow - 1, 1).getValues();
-    for (let i = 0; i < idRangeValues.length; i++) {
-      if (String(idRangeValues[i][0]).trim() === targetId) {
-        const rowNumber = i + 2;
-        if (newStatus) {
-          sheet.getRange(rowNumber, statusCol).setValue(newStatus);
-        }
-        if (newCommittee !== null) {
-          sheet.getRange(rowNumber, assignedCommCol).setValue(newCommittee);
-        }
-        if (newNotes !== null) {
-          sheet.getRange(rowNumber, notesCol).setValue(newNotes);
-        }
+    const idValues = sheet.getRange(2, appIdCol, lastRow - 1, 1).getValues();
+    for (let i = 0; i < idValues.length; i++) {
+      if (String(idValues[i][0]).trim() === targetId) {
+        const rowNum = i + 2;
+        if (newStatus && statusCol !== -1) sheet.getRange(rowNum, statusCol).setValue(newStatus);
+        if (newCommittee !== null && assignedCommCol !== -1) sheet.getRange(rowNum, assignedCommCol).setValue(newCommittee);
+        if (newNotes !== null && notesCol !== -1) sheet.getRange(rowNum, notesCol).setValue(newNotes);
         found = true;
         break;
       }
     }
   });
 
-  return json_({
-    success: found,
-    message: found ? ("Updated application " + targetId) : "Application ID not found"
-  });
+  return json_({ success: found, message: found ? "Record updated." : "Application ID not found." });
 }
 
 function handleSendEmail_(data) {
   const recipient = String(data.to || data.recipient || "").trim();
-  const recipientName = String(data.name || "").trim();
   const subject = String(data.subject || "MUNTAL Conference Notification").trim();
   const bodyText = String(data.body || "").trim();
   const bodyHtml = String(data.html || "").trim() || bodyText.replace(/\n/g, "<br>");
@@ -481,21 +491,9 @@ function handleSendEmail_(data) {
       });
     } catch (err2) {
       status = "Failed";
-      errorMessage = String(err2.message || err2 || err1);
+      errorMessage = err2.message || String(err2);
     }
   }
-
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let emailSheet = ss.getSheetByName("Email Logs");
-    if (!emailSheet) {
-      emailSheet = ss.insertSheet("Email Logs");
-      emailSheet.getRange(1, 1, 1, 6).setValues([["Timestamp", "Recipient Email", "Recipient Name", "Subject", "Status", "Error / Details"]]);
-      styleHeader_(emailSheet, 6);
-      emailSheet.setFrozenRows(1);
-    }
-    emailSheet.appendRow([new Date(), recipient, recipientName, subject, status, errorMessage]);
-  } catch (e) {}
 
   return json_({
     success: status === "Sent",
@@ -504,82 +502,20 @@ function handleSendEmail_(data) {
   });
 }
 
-function getEmailLogs_() {
+/*******************************************************
+ * 9. CONNECTION TEST
+ *******************************************************/
+function testConnection() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const emailSheet = ss.getSheetByName("Email Logs");
-  if (!emailSheet || emailSheet.getLastRow() < 2) {
-    return { success: true, logs: [] };
-  }
-
-  const values = emailSheet.getRange(2, 1, emailSheet.getLastRow() - 1, 6).getValues();
-  const logs = values.map(function(r) {
+  const primaryKeys = ["delegate", "delegation", "admin", "press"];
+  const result = primaryKeys.map(function(key) {
+    const cfg = CONFIG[key];
     return {
-      timestamp: r[0],
-      recipient_email: r[1],
-      recipient_name: r[2],
-      subject: r[3],
-      status: r[4],
-      details: r[5]
+      tab: cfg.sheetName,
+      exists: ss.getSheetByName(cfg.sheetName) !== null,
+      questionCount: cfg.fields.length
     };
   });
-
-  return { success: true, logs: logs.reverse() };
-}
-
-function getSummaryStats_() {
-  const apps = getAllApplications_();
-  const today = new Date().toDateString();
-
-  let todayCount = 0;
-  let pendingCount = 0;
-  let acceptedCount = 0;
-  let rejectedCount = 0;
-
-  apps.forEach(function(a) {
-    if (a.submitted_at && new Date(a.submitted_at).toDateString() === today) {
-      todayCount++;
-    }
-    const st = (a.status || "").toLowerCase();
-    if (st.includes("kabul") || st.includes("accept")) acceptedCount++;
-    else if (st.includes("ret") || st.includes("reject")) rejectedCount++;
-    else pendingCount++;
-  });
-
-  return {
-    success: true,
-    total: apps.length,
-    today: todayCount,
-    pending: pendingCount,
-    accepted: acceptedCount,
-    rejected: rejectedCount
-  };
-}
-
-function readPayload_(e) {
-  if (e && e.postData && e.postData.contents) return JSON.parse(e.postData.contents);
-  if (e && e.parameter) return e.parameter;
-  throw new Error("No payload");
-}
-
-function findConfig_(type) {
-  for (let k in CONFIG) {
-    if (CONFIG[k].applicationTypes.indexOf(type) !== -1) return CONFIG[k];
-  }
-  return null;
-}
-
-function styleHeader_(sheet, columnCount) {
-  const range = sheet.getRange(1, 1, 1, columnCount);
-  range
-    .setBackground("#0f172a")
-    .setFontColor("#f8fafc")
-    .setFontWeight("bold")
-    .setWrap(true)
-    .setVerticalAlignment("middle")
-    .setHorizontalAlignment("center");
-  sheet.setRowHeight(1, 40);
-}
-
-function json_(data) {
-  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+  Logger.log(JSON.stringify(result, null, 2));
+  return result;
 }

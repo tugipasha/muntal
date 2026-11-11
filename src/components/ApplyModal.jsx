@@ -140,37 +140,24 @@ export default function ApplyModal({ isOpen, trackKey = 'delegate', initialCommi
       const result = await submitApplication(payload);
 
       if (!result || result.success === false) {
-        throw new Error(result?.message || 'Submission was rejected by Google Sheets backend');
+        throw new Error(result?.message || 'Submission could not be completed.');
       }
 
-      const randomCode = Math.floor(1000 + Math.random() * 9000);
-      const trackingCode = `MUNTAL-${(config.application_type || config.id).substring(0, 3).toUpperCase()}-${randomCode}`;
+      const trackingCode = result.trackingCode || `MUNTAL-${(config.application_type || config.id).substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
       setReceiptInfo({
         code: trackingCode,
         trackTitle: config.title,
         sheetName: config.sheetName,
+        liveSynced: result.liveSynced,
+        archivedLocally: result.archivedLocally,
       });
-
-      try {
-        const stored = JSON.parse(localStorage.getItem('muntal_submissions') || '[]');
-        stored.unshift({
-          id: trackingCode,
-          track: activeTrackKey,
-          sheet: config.sheetName,
-          submittedAt: new Date().toISOString(),
-          data: payload
-        });
-        localStorage.setItem('muntal_submissions', JSON.stringify(stored));
-      } catch (storageErr) {
-        console.warn('Could not archive to localStorage:', storageErr);
-      }
 
       setFormData({});
       setIsSubmitted(true);
     } catch (err) {
       console.error('[MUNTAL Submission Error]:', err);
-      setErrorMessage('Something went wrong while submitting your application. Please try again.');
+      setErrorMessage(err.message || 'Something went wrong while submitting your application. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
