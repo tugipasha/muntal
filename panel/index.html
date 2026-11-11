@@ -268,6 +268,24 @@
          03 — EMAIL DISPATCH & COMMUNICATIONS
          ========================================== -->
     <section id="view-emails" class="view-section">
+      <!-- Live Endpoint Diagnostic Banner -->
+      <div class="flat-card" style="margin-bottom: 16px; border-left: 3px solid #f59e0b;" id="apps-script-status-banner">
+        <div class="flat-card__body" style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 260px; flex: 1;">
+            <span id="endpoint-status-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; flex-shrink: 0;"></span>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: #fff;" id="endpoint-status-title">Google Apps Script Endpoint Diagnostic</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); font-family: monospace; word-break: break-all;" id="endpoint-status-desc">Click 'Test Endpoint' to verify live Google Sheets and email capabilities.</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-default btn-sm" id="btn-check-endpoint">⚡ Test Endpoint</button>
+            <button type="button" class="btn btn-default btn-sm" id="btn-change-endpoint">Change URL</button>
+            <button type="button" class="btn btn-default btn-sm" id="btn-open-activation-guide" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.4);">Activation Guide</button>
+          </div>
+        </div>
+      </div>
+
       <div class="email-grid">
         <!-- Composer -->
         <div class="flat-card">
@@ -341,9 +359,9 @@
                 <button type="button" class="btn btn-default" id="btn-mail-client" title="Open recipient, subject, and body in desktop mail client (mailto:)">
                   Open Mail Client
                 </button>
-                <button type="button" class="btn btn-default" id="btn-open-gmail-web" style="color: #60a5fa; border-color: #2563eb;" title="Open in Gmail Web compose with 100% direct delivery">
-                  Open in Gmail ↗
-                </button>
+                <a id="btn-open-gmail-web" class="btn btn-default" style="color: #60a5fa; border-color: #2563eb; text-decoration: none; display: inline-flex; align-items: center;" target="_blank" rel="noopener noreferrer" title="Open in Gmail Web compose with 100% direct delivery">
+                  Send via Gmail Web ↗
+                </a>
                 <button type="submit" class="btn btn-primary" id="btn-submit-email">
                   Send via Apps Script
                 </button>
@@ -489,7 +507,7 @@
           </button>
         </div>
 
-        <div style="background: #0d131f; border: 1px solid var(--border); border-radius: 4px; padding: 14px; font-size: 12.5px; line-height: 1.7;">
+        <div style="background: #0d131f; border: 1px solid var(--border); border-radius: 4px; padding: 14px; font-size: 12.5px; line-height: 1.7; margin-bottom: 12px;">
           <strong style="color: #fff; display: block; margin-bottom: 8px;">How to update your Google Apps Script Web App (1 Minute):</strong>
           <ol style="margin-left: 18px; color: var(--text-muted);">
             <li style="margin-bottom: 6px;">Open your Google Sheet and click <strong style="color: #fff;">Extensions &gt; Apps Script (Uzantılar &gt; Apps Script)</strong>.</li>
@@ -497,6 +515,14 @@
             <li style="margin-bottom: 6px;">In the top function dropdown, select <strong style="color: #93c5fd;">authorizeEmailAccess</strong> and click <strong style="color: #fff;">Run (Çalıştır)</strong>. Follow the prompt to grant email permission.</li>
             <li>Click <strong style="color: #fff;">Deploy (Dağıt) &gt; Manage Deployments (Dağıtımları Yönet)</strong>, click the <strong style="color: #fff;">pencil icon (Edit / Düzenle)</strong>, select <strong style="color: #10b981;">Version: New version (Yeni sürüm)</strong>, and click <strong style="color: #fff;">Deploy (Dağıt)</strong>.</li>
           </ol>
+        </div>
+
+        <div style="margin-top: 14px; padding: 12px; background: #080c14; border: 1px solid var(--border); border-radius: 4px;">
+          <label style="font-size: 11.5px; font-weight: 600; color: #fff; display: block; margin-bottom: 4px;">Created a New Deployment with a New URL? Paste it here:</label>
+          <div style="display: flex; gap: 6px;">
+            <input type="url" class="form-input" id="guide-new-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="flex: 1; font-size: 12px;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-guide-save-url">Save &amp; Test URL</button>
+          </div>
         </div>
       </div>
 

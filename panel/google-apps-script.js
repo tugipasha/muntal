@@ -139,6 +139,17 @@ function setupSheets() {
   return "MUNTAL Sheets setup completed successfully!";
 }
 
+/**
+ * Run this function once in Apps Script editor to authorize email permissions:
+ */
+function authorizeEmailAccess() {
+  const email = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail();
+  if (email) {
+    MailApp.sendEmail(email, "MUNTAL Email Authorization Test", "Google Apps Script email dispatch has been successfully authorized!");
+    Logger.log("Authorization test email sent to: " + email);
+  }
+}
+
 /*******************************************************
  * 2. GET REQUEST — Live Application Retrieval
  *******************************************************/
@@ -146,12 +157,29 @@ function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action).trim() : "getApplications";
 
+    if (action === "ping" || action === "test") {
+      return json_({
+        success: true,
+        version: "v2",
+        email_ready: true,
+        message: "MUNTAL Google Apps Script API v2 is running with Email Dispatch enabled!"
+      });
+    }
+
     if (action === "stats") {
       return json_(getSummaryStats_());
     }
 
     if (action === "getEmailLogs") {
       return json_(getEmailLogs_());
+    }
+
+    if (action === "sendEmail") {
+      return handleSendEmail_(e.parameter || {});
+    }
+
+    if (action === "updateStatus") {
+      return handleUpdateStatus_(e.parameter || {});
     }
 
     const apps = getAllApplications_();
@@ -425,14 +453,14 @@ function handleUpdateStatus_(data) {
 }
 
 function handleSendEmail_(data) {
-  const recipient = String(data.to || "").trim();
+  const recipient = String(data.to || data.recipient || "").trim();
   const recipientName = String(data.name || "").trim();
   const subject = String(data.subject || "MUNTAL Conference Notification").trim();
   const bodyText = String(data.body || "").trim();
-  const bodyHtml = String(data.html || "").trim();
+  const bodyHtml = String(data.html || "").trim() || bodyText.replace(/\n/g, "<br>");
 
   if (!recipient || (!bodyText && !bodyHtml)) {
-    return json_({ success: false, message: "Recipient 'to' and body are required." });
+    return json_({ success: false, email_sent: false, message: "Recipient 'to' and body are required." });
   }
 
   let status = "Sent";
@@ -443,12 +471,12 @@ function handleSendEmail_(data) {
       to: recipient,
       subject: subject,
       body: bodyText,
-      htmlBody: bodyHtml || bodyText
+      htmlBody: bodyHtml
     });
   } catch (err1) {
     try {
       GmailApp.sendEmail(recipient, subject, bodyText, {
-        htmlBody: bodyHtml || bodyText,
+        htmlBody: bodyHtml,
         name: "MUNTAL Secretariat"
       });
     } catch (err2) {
@@ -471,6 +499,7 @@ function handleSendEmail_(data) {
 
   return json_({
     success: status === "Sent",
+    email_sent: status === "Sent",
     message: status === "Sent" ? ("Email delivered to " + recipient) : ("Error: " + errorMessage)
   });
 }

@@ -227,6 +227,9 @@ function authorizeEmailAccess() {
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action).trim() : "getApplications";
+    if (action === "ping" || action === "test") {
+      return json_({ success: true, version: "v2", email_ready: true, message: "MUNTAL Google Apps Script API v2 is running with Email Dispatch enabled!" });
+    }
     if (action === "sendEmail") {
       return handleSendEmail_(e.parameter || {});
     }
@@ -404,10 +407,10 @@ function handleSendEmail_(data) {
   const recipientName = String(data.name || "").trim();
   const subject = String(data.subject || "MUNTAL Notification").trim();
   const bodyText = String(data.body || "").trim();
-  const bodyHtml = String(data.html || "").trim();
+  const bodyHtml = String(data.html || "").trim() || bodyText.replace(/\n/g, "<br>");
 
   if (!recipient || (!bodyText && !bodyHtml)) {
-    return json_({ success: false, message: "Recipient and body are required." });
+    return json_({ success: false, email_sent: false, message: "Recipient and body are required." });
   }
 
   let status = "Sent";
@@ -418,12 +421,12 @@ function handleSendEmail_(data) {
       to: recipient,
       subject: subject,
       body: bodyText,
-      htmlBody: bodyHtml || bodyText
+      htmlBody: bodyHtml
     });
   } catch (err1) {
     try {
       GmailApp.sendEmail(recipient, subject, bodyText, {
-        htmlBody: bodyHtml || bodyText,
+        htmlBody: bodyHtml,
         name: "MUNTAL Secretariat"
       });
     } catch (err2) {
@@ -444,6 +447,7 @@ function handleSendEmail_(data) {
 
   return json_({
     success: status === "Sent",
+    email_sent: status === "Sent",
     message: status === "Sent" ? ("Email delivered to " + recipient) : ("Error: " + errorMessage)
   });
 }
@@ -1400,9 +1404,24 @@ function json_(data) {
     const rawSub = document.getElementById('email-subject').value;
     const rawBody = document.getElementById('email-body').value;
 
+    const renderedSub = replaceVars(rawSub, target);
+    const renderedBody = replaceVars(rawBody, target);
+
     document.getElementById('preview-target-name').textContent = `${target.name} <${target.email}>`;
-    document.getElementById('preview-subject-line').textContent = `Subject: ${replaceVars(rawSub, target)}`;
-    document.getElementById('preview-content').textContent = replaceVars(rawBody, target);
+    document.getElementById('preview-subject-line').textContent = `Subject: ${renderedSub}`;
+    document.getElementById('preview-content').textContent = renderedBody;
+
+    // Keep direct 1-click Gmail Web compose link ready
+    const gmailLink = document.getElementById('btn-open-gmail-web');
+    if (gmailLink) {
+      if (target && target.email) {
+        gmailLink.href = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(target.email)}&su=${encodeURIComponent(renderedSub)}&body=${encodeURIComponent(renderedBody)}`;
+        gmailLink.style.pointerEvents = 'auto';
+        gmailLink.style.opacity = '1';
+      } else {
+        gmailLink.href = 'https://mail.google.com/mail/';
+      }
+    }
   }
 
   function replaceVars(text, app) {
@@ -1521,13 +1540,19 @@ function json_(data) {
       }
 
       // Method B: GET query param fallback (works with Google Apps Script doGet and survives redirects)
-      if (!result || result.success !== true) {
+      if (!result || result.email_sent !== true) {
         try {
           const getUrl = `${state.appsScriptUrl}?action=sendEmail&to=${encodeURIComponent(applicant.email)}&name=${encodeURIComponent(applicant.name)}&subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(msg)}&t=${Date.now()}`;
           const getRes = await fetch(getUrl);
           if (getRes.ok) {
             try {
-              result = await getRes.json();
+              const gj = await getRes.json();
+              if (gj.message && gj.message.includes('MUNTAL Google Sheets API is running')) {
+                // Outdated script!
+                result = { success: false, email_sent: false, message: 'Outdated script version detected (API is running message)' };
+              } else {
+                result = gj;
+              }
             } catch (ge) {}
           }
         } catch (getErr) {
@@ -1535,34 +1560,27 @@ function json_(data) {
         }
       }
 
-      // Method C: Background beacon attempt if response was opaque
-      if (!result) {
-        try {
-          await fetch(state.appsScriptUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'sendEmail',
-              to: applicant.email,
-              name: applicant.name,
-              subject: sub,
-              body: msg
-            })
-          });
-        } catch (err3) {}
-      }
+      // Determine true delivery status
+      const isActuallyDelivered =
+        Boolean(result) &&
+        result.success === true &&
+        (result.email_sent === true ||
+          (result.message && result.message.toLowerCase().includes('email delivered')) ||
+          (result.status && result.status.toLowerCase() === 'sent'));
 
-      // Check results
-      if (result && result.success === true) {
+      if (isActuallyDelivered) {
         deliveredCount++;
         logEmail(applicant.email, applicant.name, sub, 'Sent (Apps Script)');
       } else {
-        lastErrorMsg = (result && result.message) ? result.message : '';
-        if (lastErrorMsg.includes('Unknown application type') || lastErrorMsg.includes('MUNTAL Google Sheets API is running')) {
+        lastErrorMsg = (result && result.message) ? result.message : 'No valid response from Apps Script';
+        if (
+          lastErrorMsg.includes('Unknown application type') ||
+          lastErrorMsg.includes('MUNTAL Google Sheets API is running') ||
+          lastErrorMsg.includes('Outdated script')
+        ) {
           needsDeploymentUpdate = true;
         }
-        logEmail(applicant.email, applicant.name, sub, 'Action Needed (Update Script)');
+        logEmail(applicant.email, applicant.name, sub, 'Failed (Apps Script Outdated)');
       }
     }
 
@@ -1570,18 +1588,16 @@ function json_(data) {
     btn.textContent = 'Send via Apps Script';
     renderLogs();
 
-    if (deliveredCount === recipients.length) {
+    if (deliveredCount === recipients.length && deliveredCount > 0) {
       showToast(`✓ All ${deliveredCount} email(s) successfully delivered via Google Apps Script!`, 'success');
     } else if (needsDeploymentUpdate) {
-      showToast('Apps Script needs updated deployment. Opening Gmail Web & Setup Guide...', 'error');
+      showToast('⚠️ Apps Script is running outdated code (no email sent). Opening Activation Guide...', 'error');
       openDeploymentGuideModal(recipients[0]);
-      handleOpenGmailWeb();
     } else if (deliveredCount > 0) {
       showToast(`Delivered to ${deliveredCount} of ${recipients.length} recipients.`, 'info');
     } else {
-      showToast('Apps Script endpoint could not deliver. Opening Gmail Web for instant dispatch.', 'error');
+      showToast('Apps Script endpoint could not deliver. Opening Activation Guide & Gmail...', 'error');
       openDeploymentGuideModal(recipients[0]);
-      handleOpenGmailWeb();
     }
   }
 
