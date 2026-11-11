@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import Lenis from 'lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -7,11 +7,12 @@ import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
 import Letters from './components/Letters.jsx';
 import CommitteesSection from './components/CommitteesSection.jsx';
-import CommitteeDossierModal from './components/CommitteeDossierModal.jsx';
 import TeamSection from './components/TeamSection.jsx';
 import ApplySection from './components/ApplySection.jsx';
-import ApplyModal from './components/ApplyModal.jsx';
 import ScrollProgressBar from './components/ScrollProgressBar.jsx';
+
+const CommitteeDossierModal = lazy(() => import('./components/CommitteeDossierModal.jsx'));
+const ApplyModal = lazy(() => import('./components/ApplyModal.jsx'));
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -37,14 +38,15 @@ export default function App() {
 
   // Setup Lenis smooth scroll & GSAP text reveal
   useEffect(() => {
+    const isMobile = window.innerWidth < 768;
     const lenis = new Lenis({
-      duration: 1.35,
+      duration: isMobile ? 0.9 : 1.35,
       easing: (t) => 1 - Math.pow(1 - t, 4),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
       wheelMultiplier: 0.88,
-      touchMultiplier: 1.4,
+      touchMultiplier: isMobile ? 1.0 : 1.4,
       infinite: false,
     });
     lenisRef.current = lenis;
@@ -149,19 +151,25 @@ export default function App() {
         <ApplySection onOpenApply={handleOpenApply} />
       </main>
 
-      <CommitteeDossierModal
-        isOpen={dossierState.isOpen}
-        activeIndex={dossierState.activeIndex}
-        onClose={handleCloseDossier}
-        onApplyForCommittee={handleApplyForCommittee}
-      />
+      <Suspense fallback={null}>
+        {dossierState.isOpen && (
+          <CommitteeDossierModal
+            isOpen={dossierState.isOpen}
+            activeIndex={dossierState.activeIndex}
+            onClose={handleCloseDossier}
+            onApplyForCommittee={handleApplyForCommittee}
+          />
+        )}
 
-      <ApplyModal
-        isOpen={applyState.isOpen}
-        trackKey={applyState.trackKey}
-        initialCommittee={applyState.initialCommittee}
-        onClose={handleCloseApply}
-      />
+        {applyState.isOpen && (
+          <ApplyModal
+            isOpen={applyState.isOpen}
+            trackKey={applyState.trackKey}
+            initialCommittee={applyState.initialCommittee}
+            onClose={handleCloseApply}
+          />
+        )}
+      </Suspense>
     </>
   );
 }

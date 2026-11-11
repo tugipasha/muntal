@@ -141,7 +141,8 @@ function buildSpiral(spiral, textures, camera, isMobile) {
     const t = i / (totalTiles - 1);
     const radius = THREE.MathUtils.lerp(startRadius, endRadius, t);
 
-    const geometry = createCurvedTileGeometry(radius, arcAngle, tileHeight, CONFIG.tileSegments);
+    const segments = isMobile ? 12 : CONFIG.tileSegments;
+    const geometry = createCurvedTileGeometry(radius, arcAngle, tileHeight, segments);
     const texture = textures[i % textures.length];
 
     const material = new THREE.ShaderMaterial({
@@ -365,7 +366,7 @@ export default function Hero({ scrollStateRef }) {
       alpha: true,
       powerPreference: 'high-performance',
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
     renderer.setClearColor(0x000000, 0);
     renderer.setSize(width, height);
     renderer.domElement.classList.add('hero__canvas');
@@ -471,7 +472,7 @@ export default function Hero({ scrollStateRef }) {
       camera.aspect = w / h;
       camera.position.z = CONFIG.cameraZ + (isMobile ? 3 : 0);
       camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
       renderer.setSize(w, h);
       if (isMobile) {
         heroLocalState.targetTiltX = 0;
@@ -481,9 +482,12 @@ export default function Hero({ scrollStateRef }) {
 
     window.addEventListener('resize', onResize);
 
-    let animationFrameId;
+    let isHeroVisible = true;
+    let animationFrameId = null;
 
     const tick = () => {
+      if (!isHeroVisible) return;
+
       const scrollProgress = scrollStateRef?.current?.scrollProgress || 0;
       const spinVel = scrollStateRef?.current?.spinVelocity || 0;
 
@@ -508,10 +512,27 @@ export default function Hero({ scrollStateRef }) {
       animationFrameId = requestAnimationFrame(tick);
     };
 
+    const visibilityObserver = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isHeroVisible;
+        isHeroVisible = entry.isIntersecting;
+        if (isHeroVisible && !wasVisible) {
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+          animationFrameId = requestAnimationFrame(tick);
+        } else if (!isHeroVisible && animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+      },
+      { threshold: 0.05 }
+    );
+    visibilityObserver.observe(heroEl);
+
     animationFrameId = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      visibilityObserver.disconnect();
       if (convergenceTimeline) convergenceTimeline.kill();
       window.removeEventListener('scroll', handleScrollReveal);
       window.removeEventListener('keydown', handleKeyDown);

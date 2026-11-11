@@ -22,18 +22,26 @@ export default function Navbar({ lenisRef, onOpenApply }) {
   };
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      const scrollPos = window.scrollY + 200;
-      const sections = ['hero', 'committees', 'letters', 'team', 'apply'];
-      let current = 'hero';
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const scrollPos = window.scrollY + 200;
+          const sections = ['hero', 'committees', 'letters', 'team', 'apply'];
+          let current = 'hero';
 
-      sections.forEach((id) => {
-        const el = document.getElementById(id) || (id === 'letters' ? (document.getElementById('about') || document.getElementById('manifesto')) : null);
-        if (el && el.offsetTop <= scrollPos) {
-          current = id;
-        }
-      });
-      setActiveSection(current);
+          for (let i = 0; i < sections.length; i++) {
+            const id = sections[i];
+            const el = document.getElementById(id) || (id === 'letters' ? (document.getElementById('about') || document.getElementById('manifesto')) : null);
+            if (el && el.offsetTop <= scrollPos) {
+              current = id;
+            }
+          }
+          setActiveSection(current);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });

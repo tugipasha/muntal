@@ -116,6 +116,12 @@ ul {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+@media (max-width: 768px) {
+  .grain {
+    display: none;
+  }
+}
+
 /* ---------- Nav ---------- */
 
 .nav {
@@ -1001,6 +1007,8 @@ body.hero-revealed .hero__bottom {
   overflow: hidden;
   border-top: 1px solid rgba(143, 195, 255, 0.15);
   box-sizing: border-box;
+  content-visibility: auto;
+  contain-intrinsic-size: 800px;
 }
 
 /* Architectural 3D Backdrop Elements */
@@ -2247,6 +2255,8 @@ body.hero-revealed .hero__bottom {
   overflow: hidden;
   user-select: none;
   box-sizing: border-box;
+  content-visibility: auto;
+  contain-intrinsic-size: 850px;
 }
 
 /* Atmospheric Editorial Backdrop */
@@ -2807,6 +2817,8 @@ body.hero-revealed .hero__bottom {
   width: 100%;
   padding: clamp(80px, 12vh, 130px) clamp(20px, 4vw, 48px);
   box-sizing: border-box;
+  content-visibility: auto;
+  contain-intrinsic-size: 800px;
 }
 
 .apply-section__lead {
@@ -3763,6 +3775,8 @@ body.hero-revealed .hero__bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: #020712;
   overflow: hidden;
+  content-visibility: auto;
+  contain-intrinsic-size: 400px;
 }
 
 .site-footer__container {

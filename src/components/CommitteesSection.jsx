@@ -162,12 +162,18 @@ export default function CommitteesSection({ onOpenDossier }) {
     return () => window.removeEventListener('resize', handleResize);
   }, [renderCylinder]);
 
-  // Auto-rotation interval: rotates continuously every 3.8s unless user is interacting
+  // Auto-rotation interval: rotates continuously every 3.8s ONLY when visible on screen
   useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    let isVisible = false;
+
     const startAutoRotate = () => {
       stopAutoRotate();
+      if (!isVisible) return;
       autoRotateTimerRef.current = setInterval(() => {
-        if (!isInteractingRef.current && !isDraggingRef.current) {
+        if (!isInteractingRef.current && !isDraggingRef.current && isVisible) {
           next();
         }
       }, 3800);
@@ -180,9 +186,23 @@ export default function CommitteesSection({ onOpenDossier }) {
       }
     };
 
-    startAutoRotate();
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+        if (isVisible) {
+          startAutoRotate();
+        } else {
+          stopAutoRotate();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
 
-    return () => stopAutoRotate();
+    return () => {
+      observer.disconnect();
+      stopAutoRotate();
+    };
   }, [next]);
 
   // Touch and Mouse drag gesture to spin the cylinder freely
@@ -362,6 +382,9 @@ export default function CommitteesSection({ onOpenDossier }) {
                         alt={comm.name}
                         className="team-poster__photo"
                         loading="lazy"
+                        decoding="async"
+                        width="400"
+                        height="480"
                       />
                       {/* Integrated High-Tech Blueprint SVG Artwork Layer */}
                       <div
