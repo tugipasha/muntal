@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MUNTAL — Secretariat Application Management Portal</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header__inner">
+      <div class="header__brand">
+        <a href="../index.html" class="brand-title">MUNTAL</a>
+        <span class="brand-badge">Secretariat Portal</span>
+      </div>
+
+      <div class="header__controls">
+        <div class="sync-status" id="sync-status-box" title="Google Sheets Live Connection Status">
+          <span class="sync-dot" id="sync-dot"></span>
+          <span id="sync-status-text">Connecting to Sheets...</span>
+        </div>
+
+        <button type="button" class="btn btn-default" id="btn-sync" title="Refresh live submissions from Google Sheets">
+          <span>Sync</span>
+        </button>
+
+        <button type="button" class="btn btn-default" id="btn-open-settings" title="API Settings & Apps Script Code">
+          <span>Settings & Script</span>
+        </button>
+
+        <a href="../index.html" class="btn btn-default">Website ↗</a>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-bar">
+      <div class="tabs-bar__inner">
+        <button type="button" class="tab-btn is-active" data-tab="dashboard">
+          01 Overview
+        </button>
+        <button type="button" class="tab-btn" data-tab="applications">
+          02 Applications <span class="tab-count" id="header-app-count">0</span>
+        </button>
+        <button type="button" class="tab-btn" data-tab="emails">
+          03 Email Dispatch
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Notification Toast Container -->
+  <div id="toast-wrap" class="toast-wrap"></div>
+
+  <!-- Main Content Container -->
+  <main class="container">
+
+    <!-- ==========================================
+         01 — OVERVIEW (DASHBOARD)
+         ========================================== -->
+    <section id="view-dashboard" class="view-section is-active">
+      <!-- 4 Flat KPI Boxes -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Applications</div>
+          <div class="kpi-num" id="kpi-total">0</div>
+          <div class="kpi-meta">Live Google Sheets records</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Submissions Today</div>
+          <div class="kpi-num" id="kpi-today">0</div>
+          <div class="kpi-meta">Received in last 24 hours</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Pending Reviews</div>
+          <div class="kpi-num" id="kpi-pending">0</div>
+          <div class="kpi-meta">Awaiting committee decision</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Accepted / Rejected</div>
+          <div class="kpi-num">
+            <span id="kpi-accepted" style="color: var(--status-accepted);">0</span>
+            <span style="color: var(--text-dim); font-size: 20px; font-weight: 400;">/</span>
+            <span id="kpi-rejected" style="color: var(--status-rejected);">0</span>
+          </div>
+          <div class="kpi-meta">Accredited / Declined</div>
+        </div>
+      </div>
+
+      <!-- Categories & Committees (Flat Grid) -->
+      <div class="flat-grid">
+        <div class="flat-card">
+          <div class="flat-card__header">
+            <span class="flat-card__title">Track Breakdown</span>
+            <button type="button" class="btn btn-default btn-sm" id="btn-dash-to-apps">View Table →</button>
+          </div>
+          <div class="flat-card__body">
+            <div class="cat-list">
+              <div class="cat-row">
+                <span class="cat-row-name">Delegate Track</span>
+                <span class="cat-row-num" id="cat-val-delegate">0</span>
+              </div>
+              <div class="cat-row">
+                <span class="cat-row-name">Chairboard / Delegation</span>
+                <span class="cat-row-num" id="cat-val-chairboard">0</span>
+              </div>
+              <div class="cat-row">
+                <span class="cat-row-name">Press & Media Corps</span>
+                <span class="cat-row-num" id="cat-val-press">0</span>
+              </div>
+              <div class="cat-row">
+                <span class="cat-row-name">Administrative Staff</span>
+                <span class="cat-row-num" id="cat-val-admin">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flat-card">
+          <div class="flat-card__header">
+            <span class="flat-card__title">Committee Allocations & 1st Choices</span>
+            <span class="cell-muted" id="dash-allocated-meta">0 assigned</span>
+          </div>
+          <div class="flat-card__body">
+            <div class="comm-list" id="dash-committee-list">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Applications (Flat Table) -->
+      <div class="flat-card flat-card--full">
+        <div class="flat-card__header">
+          <span class="flat-card__title">Recent Submissions</span>
+          <span class="cell-muted" id="dash-recent-meta">0 records</span>
+        </div>
+        <div class="flat-card__body flat-card__body--no-pad">
+          <div class="table-wrap">
+            <table class="flat-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Applicant</th>
+                  <th>Email</th>
+                  <th>Track</th>
+                  <th>Preferences (1st / 2nd / 3rd)</th>
+                  <th>Assigned Committee</th>
+                  <th>Institution</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="dash-recent-tbody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         02 — APPLICATION MANAGEMENT
+         ========================================== -->
+    <section id="view-applications" class="view-section">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="category-pills">
+          <button type="button" class="cat-btn is-active" data-cat="all">All (<span id="pill-count-all">0</span>)</button>
+          <button type="button" class="cat-btn" data-cat="delegate">Delegate (<span id="pill-count-delegate">0</span>)</button>
+          <button type="button" class="cat-btn" data-cat="chairboard">Chairboard (<span id="pill-count-chairboard">0</span>)</button>
+          <button type="button" class="cat-btn" data-cat="press">Press (<span id="pill-count-press">0</span>)</button>
+          <button type="button" class="cat-btn" data-cat="admin">Admin Staff (<span id="pill-count-admin">0</span>)</button>
+        </div>
+
+        <div class="filter-row">
+          <input type="text" class="input-search" id="input-search" placeholder="Search by name, email, school, committee, or ID...">
+
+          <select class="select-filter" id="select-status-filter">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Accepted">Accepted</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Waitlisted">Waitlisted</option>
+          </select>
+
+          <select class="select-filter" id="select-committee-filter">
+            <option value="">All Committees</option>
+            <option value="DISEC">01 DISEC</option>
+            <option value="WHO">02 WHO</option>
+            <option value="UNSC">03 UNSC</option>
+            <option value="NATO">04 NATO-NAC</option>
+            <option value="JCC">05 JCC</option>
+          </select>
+
+          <select class="select-filter" id="select-allocation-filter">
+            <option value="">All Allocations</option>
+            <option value="assigned">Assigned Only</option>
+            <option value="unassigned">Unassigned Only</option>
+          </select>
+
+          <select class="select-filter" id="select-sort">
+            <option value="date-desc">Newest First</option>
+            <option value="date-asc">Oldest First</option>
+            <option value="name-asc">Name (A-Z)</option>
+          </select>
+
+          <button type="button" class="btn btn-default" id="btn-export-csv">
+            Export CSV
+          </button>
+        </div>
+
+        <!-- Bulk Action Bar -->
+        <div class="bulk-bar" id="bulk-bar" style="display: none;">
+          <span style="font-size: 12px; font-weight: 500;" id="bulk-text">0 selected</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-default btn-sm" id="btn-bulk-accept" style="color: var(--status-accepted);">✓ Accept Selected</button>
+            <button type="button" class="btn btn-default btn-sm" id="btn-bulk-reject" style="color: var(--status-rejected);">✕ Reject Selected</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-bulk-email">✉ Bulk Email</button>
+            <button type="button" class="btn btn-default btn-sm" id="btn-bulk-clear">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Applications Table -->
+      <div class="flat-card flat-card--full">
+        <div class="flat-card__header">
+          <span class="flat-card__title" id="table-results-title">Application Records</span>
+          <span class="cell-muted" id="table-results-meta">Loading...</span>
+        </div>
+        <div class="flat-card__body flat-card__body--no-pad">
+          <div class="table-wrap">
+            <table class="flat-table">
+              <thead>
+                <tr>
+                  <th style="width: 38px; text-align: center;">
+                    <input type="checkbox" id="check-all" title="Select All">
+                  </th>
+                  <th>ID</th>
+                  <th>Applicant</th>
+                  <th>Contact</th>
+                  <th>Track</th>
+                  <th>Preferences (1st / 2nd / 3rd)</th>
+                  <th>Assigned Committee</th>
+                  <th>Institution & Grade</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         03 — EMAIL DISPATCH & COMMUNICATIONS
+         ========================================== -->
+    <section id="view-emails" class="view-section">
+      <div class="email-grid">
+        <!-- Composer -->
+        <div class="flat-card">
+          <div class="flat-card__header">
+            <span class="flat-card__title">Compose Dispatch</span>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" class="btn btn-default btn-sm is-active" id="btn-mode-single">Single Recipient</button>
+              <button type="button" class="btn btn-default btn-sm" id="btn-mode-bulk">Bulk Dispatch</button>
+            </div>
+          </div>
+          <div class="flat-card__body">
+            <form id="email-form">
+              <div class="form-item" id="item-target-single">
+                <label for="email-to-select">Target Applicant:</label>
+                <select class="form-select" id="email-to-select">
+                  <option value="">Select an applicant...</option>
+                </select>
+              </div>
+
+              <div class="form-item" id="item-target-bulk" style="display: none;">
+                <label for="bulk-scope-select">Bulk Target Scope:</label>
+                <select class="form-select" id="bulk-scope-select">
+                  <option value="filtered">Currently filtered applications</option>
+                  <option value="accepted">All Accepted applicants</option>
+                  <option value="pending">All Pending applicants</option>
+                  <option value="all">All applications</option>
+                </select>
+              </div>
+
+              <div class="form-item">
+                <label for="template-select">Email Template:</label>
+                <select class="form-select" id="template-select">
+                  <option value="acceptance" selected>01 Official Acceptance Letter</option>
+                  <option value="rejection">02 Application Outcome Notice (Decline)</option>
+                  <option value="under_review">03 Preliminary Review Notice</option>
+                  <option value="interview">04 Interview Invitation</option>
+                  <option value="logistics">05 Conference Logistics & Preparation Guide</option>
+                  <option value="custom">Custom Message</option>
+                </select>
+              </div>
+
+              <div class="form-item">
+                <label for="email-subject">Subject Line:</label>
+                <input type="text" class="form-input" id="email-subject" value="MUNTAL — Official Application Decision">
+              </div>
+
+              <div class="form-item">
+                <label>Insert Dynamic Variables:</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                  <span class="var-tag" data-var="{{name}}">{{name}}</span>
+                  <span class="var-tag" data-var="{{assigned_committee}}">{{assigned_committee}}</span>
+                  <span class="var-tag" data-var="{{first_preference}}">{{first_preference}}</span>
+                  <span class="var-tag" data-var="{{second_preference}}">{{second_preference}}</span>
+                  <span class="var-tag" data-var="{{third_preference}}">{{third_preference}}</span>
+                  <span class="var-tag" data-var="{{category}}">{{category}}</span>
+                  <span class="var-tag" data-var="{{school}}">{{school}}</span>
+                  <span class="var-tag" data-var="{{application_id}}">{{application_id}}</span>
+                  <span class="var-tag" data-var="{{status}}">{{status}}</span>
+                </div>
+              </div>
+
+              <div class="form-item">
+                <label for="email-body">Message Content:</label>
+                <textarea class="form-textarea" id="email-body" rows="8"></textarea>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border);">
+                <button type="button" class="btn btn-default" id="btn-copy-email-body" title="Copy rendered message text">
+                  Copy Text
+                </button>
+                <button type="button" class="btn btn-default" id="btn-mail-client" title="Open recipient, subject, and body in desktop mail client (mailto:)">
+                  Open Mail Client
+                </button>
+                <button type="button" class="btn btn-default" id="btn-open-gmail-web" style="color: #60a5fa; border-color: #2563eb;" title="Open in Gmail Web compose with 100% direct delivery">
+                  Open in Gmail ↗
+                </button>
+                <button type="submit" class="btn btn-primary" id="btn-submit-email">
+                  Send via Apps Script
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Preview & Logs -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="flat-card">
+            <div class="flat-card__header">
+              <span class="flat-card__title">Live Preview</span>
+              <span class="cell-muted" id="preview-target-name">—</span>
+            </div>
+            <div class="flat-card__body">
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;" id="preview-subject-line">Subject: —</div>
+              <div class="preview-box" id="preview-content"></div>
+            </div>
+          </div>
+
+          <div class="flat-card">
+            <div class="flat-card__header">
+              <span class="flat-card__title">Dispatch History</span>
+              <button type="button" class="btn btn-default btn-sm" id="btn-clear-logs">Clear Logs</button>
+            </div>
+            <div class="flat-card__body flat-card__body--no-pad">
+              <div id="email-logs-list">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==========================================
+       MODAL 1: APPLICATION DOSSIER & ALLOCATION
+       ========================================== -->
+  <div class="modal-overlay" id="dossier-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-card__header">
+        <div>
+          <span style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em;" id="dossier-cat">DELEGATE</span>
+          <h2 style="font-size: 17px; font-weight: 700; color: #fff;" id="dossier-title">Applicant Name</h2>
+          <span style="font-size: 12px; color: var(--text-muted); font-family: monospace;" id="dossier-id">MUNTAL-0000</span>
+        </div>
+        <button type="button" class="btn btn-default btn-sm" id="btn-close-dossier">✕ Close</button>
+      </div>
+
+      <div class="modal-card__body" id="dossier-content">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="modal-card__footer">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <label style="font-size: 12px; color: var(--text-muted);">Status:</label>
+          <select class="select-filter" id="dossier-status-select">
+            <option value="Pending">Pending</option>
+            <option value="Under Review">Under Review</option>
+            <option value="Accepted">Accepted</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Waitlisted">Waitlisted</option>
+          </select>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-save-dossier-status">Save Changes</button>
+        </div>
+
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn btn-default btn-sm" id="btn-dossier-email">✉ Compose Email</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 2: SETTINGS & GOOGLE APPS SCRIPT CODE
+       ========================================== -->
+  <div class="modal-overlay" id="settings-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 640px;">
+      <div class="modal-card__header">
+        <span class="flat-card__title">Google Sheets Integration Settings</span>
+        <button type="button" class="btn btn-default btn-sm" id="btn-close-settings">✕ Close</button>
+      </div>
+
+      <div class="modal-card__body">
+        <div class="form-item">
+          <label for="setting-url">Google Apps Script Web App URL:</label>
+          <input type="url" class="form-input" id="setting-url" placeholder="https://script.google.com/macros/s/.../exec">
+          <span class="cell-muted" style="display: block; margin-top: 4px;">
+            Target endpoint connected to the Google Sheets backend.
+          </span>
+        </div>
+
+        <div style="margin: 14px 0; padding: 12px; background: #0d131f; border: 1px solid var(--border); border-radius: 4px; font-size: 12px;">
+          <strong style="color: #fff; display: block; margin-bottom: 6px;">Apps Script Code Reference:</strong>
+          <p style="color: var(--text-muted); line-height: 1.6;">
+            This Google Apps Script code connects your spreadsheet tabs (Delegate, Chairboard, Admin, Press) to the portal. It handles live data reading, status updates, committee allocations, and email logs.
+          </p>
+          <button type="button" class="btn btn-default btn-sm" style="margin-top: 8px;" id="btn-copy-script-code">
+            📋 Copy Google Apps Script Code
+          </button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button type="button" class="btn btn-default btn-sm" id="btn-test-url">Test Connection</button>
+          <span id="test-feedback" style="font-size: 12px;"></span>
+        </div>
+      </div>
+
+      <div class="modal-card__footer">
+        <button type="button" class="btn btn-default btn-sm" id="btn-reset-default-url">Reset to Default</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-save-settings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 3: APPS SCRIPT EMAIL ACTIVATION GUIDE
+       ========================================== -->
+  <div class="modal-overlay" id="guide-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 660px;">
+      <div class="modal-card__header">
+        <div>
+          <span style="font-size: 11px; text-transform: uppercase; color: #f59e0b; font-weight: 700; letter-spacing: 0.05em;">Apps Script Email Activation</span>
+          <h2 style="font-size: 16px; font-weight: 700; color: #fff;">Enable Automated Email Sending</h2>
+        </div>
+        <button type="button" class="btn btn-default btn-sm" id="btn-close-guide">✕ Close</button>
+      </div>
+
+      <div class="modal-card__body">
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 4px; padding: 12px; margin-bottom: 14px; font-size: 12.5px; line-height: 1.6; color: #fde68a;" id="guide-modal-notice">
+          Your Google Apps Script Web App needs the updated script code to send background emails directly from the server. You can send instantly via Gmail Web right now, or update your Apps Script deployment in 1 minute:
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-primary" id="btn-guide-send-gmail" style="flex: 1; padding: 10px; font-size: 13px;">
+            ✉ Send via Gmail Web (1-Click) Now
+          </button>
+          <button type="button" class="btn btn-default" id="btn-guide-copy-code" style="padding: 10px; font-size: 13px;">
+            📋 Copy Updated Script Code
+          </button>
+        </div>
+
+        <div style="background: #0d131f; border: 1px solid var(--border); border-radius: 4px; padding: 14px; font-size: 12.5px; line-height: 1.7;">
+          <strong style="color: #fff; display: block; margin-bottom: 8px;">How to update your Google Apps Script Web App (1 Minute):</strong>
+          <ol style="margin-left: 18px; color: var(--text-muted);">
+            <li style="margin-bottom: 6px;">Open your Google Sheet and click <strong style="color: #fff;">Extensions &gt; Apps Script (Uzantılar &gt; Apps Script)</strong>.</li>
+            <li style="margin-bottom: 6px;">Select all code (<kbd>Ctrl+A</kbd> / <kbd>Cmd+A</kbd>), paste the updated code, and press <strong style="color: #fff;">Save (<kbd>Ctrl+S</kbd>)</strong>.</li>
+            <li style="margin-bottom: 6px;">In the top function dropdown, select <strong style="color: #93c5fd;">authorizeEmailAccess</strong> and click <strong style="color: #fff;">Run (Çalıştır)</strong>. Follow the prompt to grant email permission.</li>
+            <li>Click <strong style="color: #fff;">Deploy (Dağıt) &gt; Manage Deployments (Dağıtımları Yönet)</strong>, click the <strong style="color: #fff;">pencil icon (Edit / Düzenle)</strong>, select <strong style="color: #10b981;">Version: New version (Yeni sürüm)</strong>, and click <strong style="color: #fff;">Deploy (Dağıt)</strong>.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="modal-card__footer">
+        <span class="cell-muted" style="font-size: 11.5px;">Once updated, background sending will deliver emails directly from your Google account.</span>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-close-guide-footer">Understood</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

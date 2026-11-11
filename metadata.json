@@ -1,0 +1,6 @@
+{
+  "name": "MUNTAL",
+  "description": "Posel United Nations Conference forum and delegate platform in Izmir, Türkiye.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
