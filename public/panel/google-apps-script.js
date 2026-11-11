@@ -254,47 +254,73 @@ function doPost(e) {
   }
 }
 
+/**
+ * Bu fonksiyonu Apps Script editöründe bir kez "Çalıştır" (Run) diyerek e-posta iznini verin:
+ */
+function authorizeEmailAccess() {
+  const email = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail();
+  if (email) {
+    MailApp.sendEmail(email, "MUNTAL Email Yetkilendirme Testi", "Google Apps Script üzerinden MUNTAL e-posta gönderimi başarıyla yetkilendirildi!");
+    Logger.log("Yetkilendirme test e-postası gönderildi: " + email);
+  }
+  return "MUNTAL e-posta yetkilendirmesi tamamlandı!";
+}
+
 /*******************************************************
  * 3. GET REQUEST
- * API kontrolü ve Sekretarya Paneli senkronizasyonu
+ * API kontrolü, E-posta Gönderimi ve Sekretarya Paneli senkronizasyonu
  *******************************************************/
 function doGet(e) {
-  const action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action).trim() : "";
+  try {
+    const action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action).trim() : "";
 
-  // Sekretarya paneli veri çekme
-  if (action === "getApplications") {
-    try {
+    // 1. Canlı bağlantı ve versiyon testi
+    if (action === "ping" || action === "test") {
+      return json_({
+        success: true,
+        version: "v2",
+        email_ready: true,
+        message: "MUNTAL Google Apps Script API v2 is running with Email Dispatch enabled!"
+      });
+    }
+
+    // 2. Tarayıcıdan doğrudan güvenli e-posta gönderimi (CORS yönlendirme engelini aşar)
+    if (action === "sendEmail") {
+      return handleSendEmail_(e.parameter || {});
+    }
+
+    // 3. Durum ve komite güncellemesi
+    if (action === "updateStatus") {
+      return handleUpdateStatus_(e.parameter || {});
+    }
+
+    // 4. Sekretarya paneli veri çekme
+    if (action === "getApplications") {
       const apps = getAllApplications_();
       return json_({
         success: true,
         count: apps.length,
         applications: apps,
-        tabs: ["Delegate", "Delegation", "Admin", "Press"],
+        tabs: ["Delegate", "Chairboard", "Admin", "Press"],
         timestamp: new Date().toISOString()
       });
-    } catch (err) {
-      return json_({
-        success: false,
-        message: String(err.message || err),
-        applications: []
-      });
     }
-  }
 
-  if (action === "ping" || action === "test") {
+    // Varsayılan yanıt
     return json_({
       success: true,
-      version: "2327",
-      message: "MUNTAL Google Sheets API is running!"
+      version: "v2",
+      email_ready: true,
+      message: "MUNTAL Google Sheets API v2 is running with Email Dispatch enabled!",
+      tabs: ["Delegate", "Chairboard", "Admin", "Press"]
+    });
+  } catch (error) {
+    return json_({
+      success: false,
+      message: String(error.message || error),
+      applications: []
     });
   }
-
-  // Varsayılan kontrol yanıtı
-  return json_({
-    success: true,
-    message: "MUNTAL Google Sheets API is running!",
-    tabs: ["Delegate", "Delegation", "Admin", "Press"]
-  });
 }
 
 /*******************************************************
