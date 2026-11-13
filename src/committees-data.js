@@ -11,6 +11,7 @@ export const COMMITTEES = [
     tagline: '#Disarmament',
     role: 'General Assembly First Committee',
     image: '/images/img1.jpg',
+    cardBg: '#112b4e',
     mandate: 'Global non-proliferation treaties, autonomous strike doctrines, and outer space demilitarization.',
     description: 'The Disarmament and International Security Committee is the First Committee of the General Assembly, dealing with global disarmament, non-proliferation, and international threats to peace.',
     quote: 'The prevention of conflict begins with the calculation of deterrent equilibrium.',
@@ -42,8 +43,10 @@ export const COMMITTEES = [
     shortName: 'World Health Organization',
     posterTitle: 'WHO\nHEALTH',
     tagline: '#GlobalHealth',
-    role: 'Specialized Agency of the UN',
+    role: 'Specialized Agency of the United Nations'
+    ,
     image: '/images/img2.jpg',
+    cardBg: '#1d4a83',
     mandate: 'Pandemic preparedness architectures, bio-surveillance ethics, and global pharmaceutical equity.',
     description: 'The World Health Organization is the specialized agency responsible for international public health, coordinating responses to global health emergencies and advancing universal medical resilience.',
     quote: 'Public health is not an administrative routine; it is the frontline of human resilience.',
@@ -77,6 +80,7 @@ export const COMMITTEES = [
     tagline: '#SecurityCouncil',
     role: 'Principal Organ Under UN Charter',
     image: '/images/img3.jpg',
+    cardBg: '#0b1d35',
     mandate: 'Real-time geopolitical crisis resolution, peacekeeping mandates, and deterrence enforcement.',
     description: 'The Security Council is the principal organ of the United Nations, responsible for maintaining international peace and security.',
     quote: 'Fifteen seats, veto prerogatives, and decisions that rewrite the geography of power.',
@@ -110,6 +114,7 @@ export const COMMITTEES = [
     tagline: '#HumanRights',
     role: 'Subsidiary Body of General Assembly',
     image: '/images/img4.jpg',
+    cardBg: '#c9d6e7',
     mandate: 'Humanitarian corridors, digital civil liberties, and post-conflict truth and reconciliation commissions.',
     description: 'The Human Rights Council is the United Nations body responsible for strengthening the promotion and protection of human rights around the globe.',
     quote: 'Universal dignity codified not as an ideal, but as an enforceable sovereign obligation.',
@@ -143,6 +148,7 @@ export const COMMITTEES = [
     tagline: '#GlobalEconomy',
     role: 'General Assembly Second Committee',
     image: '/images/img5.jpg',
+    cardBg: '#2e5c9a',
     mandate: 'Sovereign debt restructuring, green finance sanctions, and critical supply-chain stability.',
     description: 'The Economic and Financial Committee deals with international trade, sovereign debt architecture, global financial stability, and sustainable development goals.',
     quote: 'Capital allocation is the true battleground of twenty-first century geopolitical strategy.',
@@ -231,12 +237,12 @@ export function getCommitteeSvgArtwork(code) {
           </g>
 
           <!-- Intercept nodes & targeting markers -->
-          <circle cx="156" cy="222" r="3.5" fill="#ffffff" filter="drop-shadow(0 0 6px #9cc4ff)" />
+          <circle cx="156" cy="222" r="3.5" fill="#ffffff" />
           <circle cx="156" cy="222" r="8" fill="none" stroke="#9cc4ff" stroke-width="0.8" stroke-opacity="0.8" />
           <line x1="148" y1="222" x2="164" y2="222" stroke="#9cc4ff" stroke-width="0.6" />
           <line x1="156" y1="214" x2="156" y2="230" stroke="#9cc4ff" stroke-width="0.6" />
 
-          <circle cx="284" cy="254" r="2.5" fill="#ffffff" filter="drop-shadow(0 0 5px #7cb5ff)" />
+          <circle cx="284" cy="254" r="2.5" fill="#ffffff" />
           <circle cx="284" cy="254" r="6" fill="none" stroke="#7cb5ff" stroke-width="0.7" stroke-opacity="0.7" />
 
           <!-- Dramatic horizon crest flare -->
@@ -303,9 +309,9 @@ export function getCommitteeSvgArtwork(code) {
           </g>
 
           <!-- Luminous bio-nodes -->
-          <circle cx="160" cy="270" r="4.5" fill="#ffffff" filter="drop-shadow(0 0 8px #9cc4ff)" />
-          <circle cx="202" cy="248" r="3.5" fill="#ffffff" filter="drop-shadow(0 0 6px #7cb5ff)" />
-          <circle cx="260" cy="170" r="5" fill="#ffffff" filter="drop-shadow(0 0 10px #bde0ff)" />
+          <circle cx="160" cy="270" r="4.5" fill="#ffffff" />
+          <circle cx="202" cy="248" r="3.5" fill="#ffffff" />
+          <circle cx="260" cy="170" r="5" fill="#ffffff" />
           <circle cx="298" cy="138" r="3" fill="#9cc4ff" />
 
           <!-- Radiant humanitarian rings -->
@@ -349,7 +355,7 @@ export function getCommitteeSvgArtwork(code) {
             <!-- Middle Tier -->
             <path d="M -155 55 A 165 58 0 0 1 155 55" fill="none" stroke="#7cb5ff" stroke-width="1.2" stroke-opacity="0.55" />
             <!-- The Iconic Horseshoe Council Table Rim -->
-            <path d="M -130 30 A 140 48 0 0 1 130 30" fill="none" stroke="url(#amphi-rail)" stroke-width="2.6" filter="drop-shadow(0 0 8px rgba(156,196,255,0.7))" />
+            <path d="M -130 30 A 140 48 0 0 1 130 30" fill="none" stroke="url(#amphi-rail)" stroke-width="2.6" />
             <!-- Inner Dais Ring -->
             <path d="M -95 10 A 105 34 0 0 1 95 10" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.8" />
             <!-- Dais core dais floor -->
@@ -360,7 +366,7 @@ export function getCommitteeSvgArtwork(code) {
             <circle cx="-85" cy="18" r="2.5" fill="#ffffff" />
             <circle cx="-55" cy="10" r="2.5" fill="#ffffff" />
             <circle cx="-25" cy="6" r="2.5" fill="#ffffff" />
-            <circle cx="0" cy="5" r="3" fill="#ffffff" filter="drop-shadow(0 0 4px #9cc4ff)" />
+            <circle cx="0" cy="5" r="3" fill="#ffffff" />
             <circle cx="25" cy="6" r="2.5" fill="#ffffff" />
             <circle cx="55" cy="10" r="2.5" fill="#ffffff" />
             <circle cx="85" cy="18" r="2.5" fill="#ffffff" />
@@ -389,7 +395,7 @@ export function getCommitteeSvgArtwork(code) {
           
           <!-- Sovereign orbital chokepoint arcs -->
           <path d="M 30 360 C 90 260, 310 240, 370 340" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.55" stroke-dasharray="4 6" />
-          <circle cx="280" cy="265" r="3" fill="#ffffff" filter="drop-shadow(0 0 6px #ffffff)" />
+          <circle cx="280" cy="265" r="3" fill="#ffffff" />
         </svg>
       `;
 
@@ -461,7 +467,7 @@ export function getCommitteeSvgArtwork(code) {
           </g>
 
           <!-- Rim of light shining around delegates -->
-          <line x1="140" y1="410" x2="260" y2="410" stroke="#9cc4ff" stroke-width="1.5" stroke-opacity="0.85" filter="drop-shadow(0 0 6px #7cb5ff)" />
+          <line x1="140" y1="410" x2="260" y2="410" stroke="#9cc4ff" stroke-width="1.5" stroke-opacity="0.85" />
         </svg>
       `;
 
@@ -530,11 +536,11 @@ export function getCommitteeSvgArtwork(code) {
           </g>
 
           <!-- Soaring Logarithmic Yield Curve -->
-          <path d="M 30 380 C 110 370, 160 310, 210 220 T 310 95 T 380 40" fill="none" stroke="url(#chart-curve)" stroke-width="2.5" filter="drop-shadow(0 0 10px rgba(124, 181, 255, 0.6))" />
+          <path d="M 30 380 C 110 370, 160 310, 210 220 T 310 95 T 380 40" fill="none" stroke="url(#chart-curve)" stroke-width="2.5" />
 
           <!-- High-frequency Data Points -->
-          <circle cx="210" cy="220" r="4" fill="#ffffff" filter="drop-shadow(0 0 6px #7cb5ff)" />
-          <circle cx="310" cy="95" r="5" fill="#ffffff" filter="drop-shadow(0 0 8px #9cc4ff)" />
+          <circle cx="210" cy="220" r="4" fill="#ffffff" />
+          <circle cx="310" cy="95" r="5" fill="#ffffff" />
           <circle cx="310" cy="95" r="12" fill="none" stroke="#9cc4ff" stroke-width="0.8" stroke-opacity="0.6" />
           <circle cx="380" cy="40" r="3.5" fill="#ffffff" />
         </svg>

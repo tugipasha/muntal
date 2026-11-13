@@ -1,23 +1,86 @@
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import Lenis from 'lenis';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
-import Letters from './components/Letters.jsx';
-import CommitteesSection from './components/CommitteesSection.jsx';
-import TeamSection from './components/TeamSection.jsx';
-import ApplySection from './components/ApplySection.jsx';
 import ScrollProgressBar from './components/ScrollProgressBar.jsx';
 
+const Letters = lazy(() => import('./components/Letters.jsx'));
+const CommitteesSection = lazy(() => import('./components/CommitteesSection.jsx'));
+const TeamSection = lazy(() => import('./components/TeamSection.jsx'));
+const ApplySection = lazy(() => import('./components/ApplySection.jsx'));
 const CommitteeDossierModal = lazy(() => import('./components/CommitteeDossierModal.jsx'));
 const ApplyModal = lazy(() => import('./components/ApplyModal.jsx'));
 
-gsap.registerPlugin(ScrollTrigger);
+function DeferredSection({ id, minHeight = '90vh', children }) {
+  const [mounted, setMounted] = useState(false);
+  const holderRef = useRef(null);
+
+  useEffect(() => {
+    if (mounted) return;
+    const el = holderRef.current;
+    if (!el || !('IntersectionObserver' in window)) {
+      setMounted(true);
+      return;
+    }
+
+    const mountNow = () => setMounted(true);
+    const isLetters = id === 'letters';
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observer.disconnect();
+          mountNow();
+        }
+      },
+      { rootMargin: isLetters ? '0px 0px' : '150px 0px', threshold: isLetters ? 0.01 : 0 }
+    );
+    observer.observe(el);
+
+    const onEarlyScroll = () => {
+      if (window.scrollY > 2) {
+        observer.disconnect();
+        mountNow();
+      }
+    };
+    if (isLetters) {
+      window.addEventListener('scroll', onEarlyScroll, { passive: true, once: true });
+    }
+
+    const handleReveal = (e) => {
+      if (!e?.detail || e.detail === id) {
+        observer.disconnect();
+        mountNow();
+      }
+    };
+    const handleHashJump = () => {
+      if (window.location.hash === `#${id}`) {
+        observer.disconnect();
+        mountNow();
+      }
+    };
+    window.addEventListener('muntal:reveal', handleReveal);
+    window.addEventListener('hashchange', handleHashJump);
+
+    return () => {
+      observer.disconnect();
+      if (isLetters) window.removeEventListener('scroll', onEarlyScroll);
+      window.removeEventListener('muntal:reveal', handleReveal);
+      window.removeEventListener('hashchange', handleHashJump);
+    };
+  }, [id, mounted]);
+
+  if (mounted) {
+    return (
+      <Suspense fallback={<section className="section" id={id} style={{ minHeight }} aria-hidden="true" />}>
+        {children}
+      </Suspense>
+    );
+  }
+
+  return <section className="section" id={id} ref={holderRef} style={{ minHeight }} aria-hidden="true" />;
+}
 
 export default function App() {
-  const lenisRef = useRef(null);
   const scrollStateRef = useRef({
     scrollProgress: 0,
     scrollVelocity: 0,
@@ -36,85 +99,43 @@ export default function App() {
     initialCommittee: '',
   });
 
-  // Setup Lenis smooth scroll & GSAP text reveal
+  // Lightweight passive scroll state + IntersectionObserver text reveal (zero MutationObserver)
   useEffect(() => {
-    const isMobile = window.innerWidth < 768;
-    const lenis = new Lenis({
-      duration: isMobile ? 0.9 : 1.35,
-      easing: (t) => 1 - Math.pow(1 - t, 4),
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 0.88,
-      touchMultiplier: isMobile ? 1.0 : 1.4,
-      infinite: false,
-    });
-    lenisRef.current = lenis;
-    window.lenis = lenis;
+    let lastY = window.scrollY;
+    let lastTime = performance.now();
+    let rafPending = false;
 
-    const onScroll = ({ scroll, limit, velocity }) => {
-      scrollStateRef.current.scrollProgress = Math.min(scroll / Math.max(limit, 1), 1);
-      const clampedVel = Math.max(-60, Math.min(60, velocity));
-      scrollStateRef.current.scrollVelocity = clampedVel;
-      scrollStateRef.current.spinVelocity += clampedVel * 0.0028;
-      ScrollTrigger.update();
-    };
+    const handleScroll = () => {
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(() => {
+        rafPending = false;
+        const now = performance.now();
+        const y = window.scrollY;
+        const limit = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+        const dt = Math.max(now - lastTime, 16);
+        const velocity = ((y - lastY) / dt) * 16;
+        const clampedVel = Math.max(-60, Math.min(60, velocity));
 
-    lenis.on('scroll', onScroll);
+        scrollStateRef.current.scrollProgress = Math.min(Math.max(y / limit, 0), 1);
+        scrollStateRef.current.scrollVelocity = clampedVel;
+        scrollStateRef.current.spinVelocity += clampedVel * 0.0028;
 
-    // Sync Lenis with GSAP ticker for synchronized 60/120fps stutter-free scroll
-    const updateTicker = (time) => {
-      lenis.raf(time * 1000);
-    };
-    gsap.ticker.add(updateTicker);
-    gsap.ticker.lagSmoothing(0);
-
-    // GSAP ScrollTrigger text reveals
-    const ctx = gsap.context(() => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile) {
-        gsap.set('.reveal-text', { opacity: 1, y: 0, clearProps: 'all' });
-        return;
-      }
-
-      gsap.utils.toArray('.reveal-text').forEach((el) => {
-        gsap.fromTo(
-          el,
-          { opacity: 0, y: 40 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 1.2,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: el,
-              start: 'top 85%',
-              toggleActions: 'play none none none',
-              once: true,
-            },
-          }
-        );
+        lastY = y;
+        lastTime = now;
       });
-    });
-
-    ScrollTrigger.refresh();
-
-    return () => {
-      gsap.ticker.remove(updateTicker);
-      lenis.destroy();
-      window.lenis = null;
-      ctx.revert();
     };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleOpenDossier = useCallback((index) => {
     setDossierState({ isOpen: true, activeIndex: index });
-    if (lenisRef.current) lenisRef.current.stop();
   }, []);
 
   const handleCloseDossier = useCallback(() => {
     setDossierState((prev) => ({ ...prev, isOpen: false }));
-    if (lenisRef.current) lenisRef.current.start();
   }, []);
 
   const handleOpenApply = useCallback((trackKey = 'delegate', committee = '') => {
@@ -123,12 +144,10 @@ export default function App() {
       trackKey,
       initialCommittee: committee,
     });
-    if (lenisRef.current) lenisRef.current.stop();
   }, []);
 
   const handleCloseApply = useCallback(() => {
     setApplyState((prev) => ({ ...prev, isOpen: false }));
-    if (lenisRef.current) lenisRef.current.start();
   }, []);
 
   const handleApplyForCommittee = useCallback((commCode) => {
@@ -141,14 +160,22 @@ export default function App() {
       <ScrollProgressBar />
       <div className="grain" aria-hidden="true"></div>
 
-      <Navbar lenisRef={lenisRef} onOpenApply={handleOpenApply} />
+      <Navbar onOpenApply={handleOpenApply} />
 
       <main className="sections-stack">
         <Hero scrollStateRef={scrollStateRef} />
-        <Letters />
-        <CommitteesSection onOpenDossier={handleOpenDossier} />
-        <TeamSection />
-        <ApplySection onOpenApply={handleOpenApply} />
+        <DeferredSection id="letters" minHeight="85vh">
+          <Letters />
+        </DeferredSection>
+        <DeferredSection id="committees" minHeight="100vh">
+          <CommitteesSection onOpenDossier={handleOpenDossier} />
+        </DeferredSection>
+        <DeferredSection id="team" minHeight="100vh">
+          <TeamSection />
+        </DeferredSection>
+        <DeferredSection id="apply" minHeight="90vh">
+          <ApplySection onOpenApply={handleOpenApply} />
+        </DeferredSection>
       </main>
 
       <Suspense fallback={null}>

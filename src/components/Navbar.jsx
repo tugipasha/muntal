@@ -1,21 +1,15 @@
 import React, { useState, useEffect } from 'react';
 
-export default function Navbar({ lenisRef, onOpenApply }) {
+export default function Navbar({ onOpenApply }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [hasOpenedMobile, setHasOpenedMobile] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
 
   const scrollTo = (targetId) => {
+    window.dispatchEvent(new CustomEvent('muntal:reveal', { detail: targetId }));
     const el = document.getElementById(targetId);
     if (el) {
-      if (lenisRef?.current) {
-        lenisRef.current.scrollTo(el, {
-          offset: -10,
-          duration: 1.35,
-          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        });
-      } else {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
+      el.scrollIntoView({ behavior: 'smooth' });
       setActiveSection(targetId);
       setIsMobileOpen(false);
     }
@@ -139,7 +133,10 @@ export default function Navbar({ lenisRef, onOpenApply }) {
             type="button"
             aria-label="Toggle mobile menu"
             aria-expanded={isMobileOpen}
-            onClick={() => setIsMobileOpen((prev) => !prev)}
+            onClick={() => {
+              setHasOpenedMobile(true);
+              setIsMobileOpen((prev) => !prev);
+            }}
           >
             <span className="nav__burger-bar"></span>
             <span className="nav__burger-bar"></span>
@@ -149,6 +146,7 @@ export default function Navbar({ lenisRef, onOpenApply }) {
       </header>
 
       {/* Mobile Navigation Drawer (layout faithful to Image 1) */}
+      {hasOpenedMobile && (
       <div
         className={`mobile-nav ${isMobileOpen ? 'is-open' : ''}`}
         id="mobile-nav-drawer"
@@ -239,6 +237,7 @@ export default function Navbar({ lenisRef, onOpenApply }) {
           </div>
         </div>
       </div>
+      )}
     </>
   );
 }

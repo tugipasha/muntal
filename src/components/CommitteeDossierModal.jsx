@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { COMMITTEES } from '../committees-data.js';
 
 export default function CommitteeDossierModal({ activeIndex, isOpen, onClose, onApplyForCommittee }) {
   const [downloadQueued, setDownloadQueued] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('apply-modal-open');
+    } else {
+      document.body.classList.remove('apply-modal-open');
+    }
+    return () => document.body.classList.remove('apply-modal-open');
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

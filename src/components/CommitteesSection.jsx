@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { gsap } from 'gsap';
 import { COMMITTEES, getCommitteeSvgArtwork } from '../committees-data.js';
+import { computeCommitteeCardLayout, easeOutCubic } from '../utils/carouselMath.js';
 
 function LaurelEmblem() {
   return (
@@ -21,13 +21,7 @@ function LaurelEmblem() {
       <ellipse cx="50" cy="62" rx="18" ry="6" stroke="currentColor" strokeWidth="1.2" fill="none" opacity="0.6" />
 
       {/* Left Laurel */}
-      <path
-        d="M 22 75 C 14 62 14 38 28 22"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        fill="none"
-      />
+      <path d="M 22 75 C 14 62 14 38 28 22" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
       <path d="M 20 72 C 14 70 10 65 14 61 C 18 64 21 68 20 72 Z" fill="currentColor" opacity="0.9" />
       <path d="M 16 58 C 10 56 6 50 11 47 C 15 50 17 54 16 58 Z" fill="currentColor" opacity="0.9" />
       <path d="M 16 44 C 10 41 8 35 13 32 C 17 35 18 40 16 44 Z" fill="currentColor" opacity="0.9" />
@@ -35,13 +29,7 @@ function LaurelEmblem() {
       <path d="M 27 22 C 25 16 28 10 34 11 C 34 16 31 20 27 22 Z" fill="currentColor" opacity="0.9" />
 
       {/* Right Laurel */}
-      <path
-        d="M 78 75 C 86 62 86 38 72 22"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        fill="none"
-      />
+      <path d="M 78 75 C 86 62 86 38 72 22" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
       <path d="M 80 72 C 86 70 90 65 86 61 C 82 64 79 68 80 72 Z" fill="currentColor" opacity="0.9" />
       <path d="M 84 58 C 90 56 94 50 89 47 C 85 50 83 54 84 58 Z" fill="currentColor" opacity="0.9" />
       <path d="M 84 44 C 90 41 92 35 87 32 C 83 35 82 40 84 44 Z" fill="currentColor" opacity="0.9" />
@@ -52,19 +40,26 @@ function LaurelEmblem() {
 }
 
 export default function CommitteesSection({ onOpenDossier }) {
-  const total = COMMITTEES.length; // 5
-  const anglePerItem = 360 / total; // 72 degrees
+  const total = COMMITTEES.length;
+  const anglePerItem = 360 / total;
 
-  const [activeIndex, setActiveIndex] = useState(2); // 03 UNSC centerpiece by default
   const [currentStep, setCurrentStep] = useState(2);
 
   const sectionRef = useRef(null);
   const stageRef = useRef(null);
   const trackRef = useRef(null);
   const cylinderState = useRef({ angle: -2 * 72 });
+  const tweenRafRef = useRef(null);
   const isDraggingRef = useRef(false);
   const isInteractingRef = useRef(false);
   const autoRotateTimerRef = useRef(null);
+
+  const stopTween = useCallback(() => {
+    if (tweenRafRef.current) {
+      cancelAnimationFrame(tweenRafRef.current);
+      tweenRafRef.current = null;
+    }
+  }, []);
 
   // Position committee cards on the 3D revolving cylinder
   const renderCylinder = useCallback((angleDeg) => {
@@ -73,75 +68,55 @@ export default function CommitteesSection({ onOpenDossier }) {
     if (!cards.length) return;
 
     const width = window.innerWidth;
-    const isMobile = width < 768;
-    const isSmall = width < 420;
-
-    // Generous radius for a spacious, open cylindrical curve (ferah)
-    const radius = isSmall ? 280 : isMobile ? 320 : 460;
-    const depthRatio = isMobile ? 0.95 : 0.88;
 
     cards.forEach((card, idx) => {
-      const baseAngle = idx * anglePerItem;
-      const totalAngle = baseAngle + angleDeg;
-      const norm = (((totalAngle % 360) + 540) % 360) - 180;
-      const rad = (norm * Math.PI) / 180;
-
-      const x = Math.sin(rad) * radius;
-      const z = (Math.cos(rad) - 1) * radius * depthRatio;
-      const rotateY = -norm * 0.72; // Outward angle following the ring curve
-      const depthFactor = (Math.cos(rad) + 1) / 2; // 1 at front, 0 at back
-
-      const scale = isMobile ? (0.72 + 0.28 * depthFactor) : (0.76 + 0.24 * depthFactor);
-      const opacity = 0.2 + 0.8 * Math.pow(depthFactor, 1.4);
-      const zIndex = Math.round(10 + depthFactor * 80);
-
-      const isCenter = Math.abs(norm) < 28;
-      const isAdjacent = Math.abs(norm) >= 28 && Math.abs(norm) <= 85;
+      const { x, z, rotateY, scale, opacity, zIndex, isCenter, isAdjacent } =
+        computeCommitteeCardLayout(idx, angleDeg, anglePerItem, width);
 
       card.classList.toggle('is-active', isCenter);
       card.classList.toggle('is-adjacent', isAdjacent);
       card.setAttribute('aria-selected', isCenter ? 'true' : 'false');
       card.style.pointerEvents = isCenter || isAdjacent ? 'auto' : 'none';
-
-      gsap.set(card, {
-        x,
-        z,
-        rotationY: rotateY,
-        scale,
-        opacity,
-        zIndex,
-      });
+      card.style.transform = `translate3d(${x}px, 0, ${z}px) rotateY(${rotateY}deg) scale(${scale})`;
+      card.style.opacity = opacity;
+      card.style.zIndex = zIndex;
     });
   }, [anglePerItem]);
 
   // Smooth rotation animation to target step
   const rotateToStep = useCallback((step, animate = true) => {
     const targetAngle = -step * anglePerItem;
-    const normIndex = ((step % total) + total) % total;
-
     setCurrentStep(step);
-    setActiveIndex(normIndex);
-
-    gsap.killTweensOf(cylinderState.current);
+    stopTween();
 
     if (animate) {
-      gsap.to(cylinderState.current, {
-        angle: targetAngle,
-        duration: 0.85,
-        ease: 'power3.out',
-        onUpdate: () => renderCylinder(cylinderState.current.angle),
-        onComplete: () => {
+      const startAngle = cylinderState.current.angle;
+      const startTime = performance.now();
+      const duration = 850;
+
+      const stepFrame = (now) => {
+        const t = Math.min(1, (now - startTime) / duration);
+        const eased = easeOutCubic(t);
+        cylinderState.current.angle = startAngle + (targetAngle - startAngle) * eased;
+        renderCylinder(cylinderState.current.angle);
+
+        if (t < 1) {
+          tweenRafRef.current = requestAnimationFrame(stepFrame);
+        } else {
+          tweenRafRef.current = null;
           const safeStep = ((step % total) + total) % total;
           setCurrentStep(safeStep);
           cylinderState.current.angle = -safeStep * anglePerItem;
           renderCylinder(cylinderState.current.angle);
-        },
-      });
+        }
+      };
+
+      tweenRafRef.current = requestAnimationFrame(stepFrame);
     } else {
       cylinderState.current.angle = targetAngle;
       renderCylinder(cylinderState.current.angle);
     }
-  }, [anglePerItem, total, renderCylinder]);
+  }, [anglePerItem, total, renderCylinder, stopTween]);
 
   const next = useCallback(() => {
     rotateToStep(currentStep + 1, true);
@@ -158,9 +133,12 @@ export default function CommitteesSection({ onOpenDossier }) {
     const handleResize = () => {
       renderCylinder(cylinderState.current.angle);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [renderCylinder]);
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      stopTween();
+    };
+  }, [renderCylinder, stopTween]);
 
   // Auto-rotation interval: rotates continuously every 3.8s ONLY when visible on screen
   useEffect(() => {
@@ -168,6 +146,13 @@ export default function CommitteesSection({ onOpenDossier }) {
     if (!el) return;
 
     let isVisible = false;
+
+    const stopAutoRotate = () => {
+      if (autoRotateTimerRef.current) {
+        clearInterval(autoRotateTimerRef.current);
+        autoRotateTimerRef.current = null;
+      }
+    };
 
     const startAutoRotate = () => {
       stopAutoRotate();
@@ -177,13 +162,6 @@ export default function CommitteesSection({ onOpenDossier }) {
           next();
         }
       }, 3800);
-    };
-
-    const stopAutoRotate = () => {
-      if (autoRotateTimerRef.current) {
-        clearInterval(autoRotateTimerRef.current);
-        autoRotateTimerRef.current = null;
-      }
     };
 
     const observer = new IntersectionObserver(
@@ -233,7 +211,7 @@ export default function CommitteesSection({ onOpenDossier }) {
       startAngle = cylinderState.current.angle;
       isPointerDown = true;
       isDraggingRef.current = false;
-      gsap.killTweensOf(cylinderState.current);
+      stopTween();
     };
 
     const onDragMove = (clientX) => {
@@ -302,7 +280,7 @@ export default function CommitteesSection({ onOpenDossier }) {
       window.removeEventListener('mouseup', onMouseUp);
       if (resumeTimeout) clearTimeout(resumeTimeout);
     };
-  }, [anglePerItem, next, prev, renderCylinder, rotateToStep]);
+  }, [anglePerItem, next, prev, renderCylinder, rotateToStep, stopTween]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -338,7 +316,6 @@ export default function CommitteesSection({ onOpenDossier }) {
       </div>
 
       <div className="committees__container">
-        {/* Clean Editorial Section Header (Subtitle removed per selection) */}
         <div className="committees__header">
           <div className="committees__meta-row">
             <span className="committees__label reveal-text">02 — COMMITTEES</span>
@@ -346,7 +323,7 @@ export default function CommitteesSection({ onOpenDossier }) {
           </div>
         </div>
 
-        {/* 3D Cylindrical Ring Revolving Stage (matching Team design) */}
+        {/* 3D Cylindrical Ring Revolving Stage */}
         <div className="committees-cylinder-stage-wrapper">
           <div className="committees-cylinder-stage" ref={stageRef}>
             <div className="committees-cylinder-track" ref={trackRef}>
@@ -374,19 +351,12 @@ export default function CommitteesSection({ onOpenDossier }) {
                   }}
                 >
                   <div className="team-poster-frame">
-                    
-                    {/* Background Artwork & Photo Layer */}
                     <div className="team-poster__photo-wrapper">
-                      <img
-                        src={comm.image}
-                        alt={comm.name}
+                      <div
                         className="team-poster__photo"
-                        loading="lazy"
-                        decoding="async"
-                        width="400"
-                        height="480"
+                        style={{ backgroundColor: comm.cardBg || '#112b4e' }}
+                        aria-hidden="true"
                       />
-                      {/* Integrated High-Tech Blueprint SVG Artwork Layer */}
                       <div
                         className="committee-poster__svg-overlay"
                         dangerouslySetInnerHTML={{ __html: getCommitteeSvgArtwork(comm.code) }}
@@ -395,7 +365,6 @@ export default function CommitteesSection({ onOpenDossier }) {
                       <div className="team-poster__overlay-grad"></div>
                     </div>
 
-                    {/* Giant Architectural Typographic Role Backdrop */}
                     <div className="team-poster__giant-text" aria-hidden="true">
                       {comm.posterTitle.split('\n').map((line, lIdx) => (
                         <span key={lIdx} className="team-poster__giant-line">
@@ -404,13 +373,11 @@ export default function CommitteesSection({ onOpenDossier }) {
                       ))}
                     </div>
 
-                    {/* Top Bar with Tagline & Badge */}
                     <div className="team-poster__topbar">
                       <span className="team-poster__hashtag">{comm.tagline}</span>
                       <span className="team-poster__code-badge">{comm.num}</span>
                     </div>
 
-                    {/* Bottom Editorial Content Card */}
                     <div className="team-poster__footer">
                       <div className="team-poster__title-group">
                         <h3 className="team-poster__name">{comm.code}</h3>
@@ -422,7 +389,6 @@ export default function CommitteesSection({ onOpenDossier }) {
                       </div>
                     </div>
 
-                    {/* Glassmorphic Rim Sheen */}
                     <div className="team-poster__sheen" aria-hidden="true"></div>
                   </div>
                 </div>
@@ -430,7 +396,6 @@ export default function CommitteesSection({ onOpenDossier }) {
             </div>
           </div>
         </div>
-
       </div>
     </section>
   );

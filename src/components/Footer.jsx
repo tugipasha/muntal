@@ -5,11 +5,7 @@ export default function Footer() {
     e.preventDefault();
     const target = document.querySelector(id);
     if (target) {
-      if (window.lenis) {
-        window.lenis.scrollTo(target, { offset: 0, duration: 1.2 });
-      } else {
-        target.scrollIntoView({ behavior: 'smooth' });
-      }
+      target.scrollIntoView({ behavior: 'smooth' });
     }
   };
 

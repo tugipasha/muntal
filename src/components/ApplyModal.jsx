@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { gsap } from 'gsap';
 import { TRACK_CONFIGS } from '../apply.js';
 import { submitApplication, buildApplicationPayload } from '../api.js';
 
@@ -34,14 +33,6 @@ export default function ApplyModal({ isOpen, trackKey = 'delegate', initialCommi
       // Add modal open class to body to hide nav header as in original CSS
       document.body.classList.add('apply-modal-open');
       document.body.style.overflow = 'hidden';
-
-      if (containerRef.current) {
-        gsap.fromTo(
-          containerRef.current,
-          { y: 25, opacity: 0, scale: 0.98 },
-          { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: 'power3.out' }
-        );
-      }
     } else {
       document.body.classList.remove('apply-modal-open');
       document.body.style.overflow = '';

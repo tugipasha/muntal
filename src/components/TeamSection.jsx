@@ -1,21 +1,29 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { gsap } from 'gsap';
 import { TEAM_MEMBERS } from '../team.js';
+import { computeTeamCardLayout, easeOutCubic, shortestStepDelta } from '../utils/carouselMath.js';
 
 export default function TeamSection() {
   const total = TEAM_MEMBERS.length;
   const anglePerItem = 360 / total;
 
-  const [activeIndex, setActiveIndex] = useState(0); // Tolga Aydın (Head of IT)
   const [currentStep, setCurrentStep] = useState(0);
+  const [shouldLoadImages, setShouldLoadImages] = useState(false);
 
   const sectionRef = useRef(null);
   const stageRef = useRef(null);
   const trackRef = useRef(null);
   const cylinderState = useRef({ angle: 0 });
+  const tweenRafRef = useRef(null);
   const isDraggingRef = useRef(false);
   const isInteractingRef = useRef(false);
   const autoRotateTimerRef = useRef(null);
+
+  const stopTween = useCallback(() => {
+    if (tweenRafRef.current) {
+      cancelAnimationFrame(tweenRafRef.current);
+      tweenRafRef.current = null;
+    }
+  }, []);
 
   // Position cards on the 3D cylinder
   const renderCylinder = useCallback((angleDeg) => {
@@ -24,79 +32,56 @@ export default function TeamSection() {
     if (!cards.length) return;
 
     const width = window.innerWidth;
-    const isMobile = width < 768;
-    const isSmall = width < 420;
-
-    // Card width + gap on screen; radius is derived so neighbours sit side by side
-    const cardW = isSmall ? 255 : isMobile ? 290 : Math.min(340, Math.max(270, width * 0.24));
-    const spacing = cardW * (isMobile ? 0.8 : 0.92);
-    const radius = spacing / Math.sin((anglePerItem * Math.PI) / 180) ;
-    const depthRatio = 0.6;
 
     cards.forEach((card, idx) => {
-      const baseAngle = idx * anglePerItem;
-      const totalAngle = baseAngle + angleDeg;
-      const norm = (((totalAngle % 360) + 540) % 360) - 180;
-      const rad = (norm * Math.PI) / 180;
-
-      const x = Math.sin(rad) * radius;
-      const z = (Math.cos(rad) - 1) * radius * depthRatio;
-      const rotateY = -norm * 0.9;
-      const dist = Math.abs(norm) / anglePerItem; // distance from centre in card steps
-
-      const scale = Math.max(0.55, 1 - dist * 0.07);
-      const opacity = dist > 4.5 ? 0 : Math.max(0.15, 1 - dist * 0.22);
-      const zIndex = Math.round(100 - dist * 4);
-
-      const isCenter = dist < 0.5;
-      const isAdjacent = dist >= 0.5 && dist <= 3;
+      const { x, z, rotateY, scale, opacity, zIndex, isCenter, isAdjacent } =
+        computeTeamCardLayout(idx, angleDeg, anglePerItem, width);
 
       card.classList.toggle('is-active', isCenter);
       card.classList.toggle('is-adjacent', isAdjacent);
       card.setAttribute('aria-selected', isCenter ? 'true' : 'false');
       card.style.pointerEvents = isCenter || isAdjacent ? 'auto' : 'none';
       card.style.visibility = opacity === 0 ? 'hidden' : 'visible';
-
-      gsap.set(card, {
-        x,
-        z,
-        rotationY: rotateY,
-        scale,
-        opacity,
-        zIndex,
-      });
+      card.style.transform = `translate3d(${x}px, 0, ${z}px) rotateY(${rotateY}deg) scale(${scale})`;
+      card.style.opacity = opacity;
+      card.style.zIndex = zIndex;
     });
   }, [anglePerItem]);
 
   // Smooth rotation animation to target step
   const rotateToStep = useCallback((step, animate = true) => {
     const targetAngle = -step * anglePerItem;
-    const normIndex = ((step % total) + total) % total;
-
     setCurrentStep(step);
-    setActiveIndex(normIndex);
-
-    gsap.killTweensOf(cylinderState.current);
+    stopTween();
 
     if (animate) {
-      gsap.to(cylinderState.current, {
-        angle: targetAngle,
-        duration: 0.85,
-        ease: 'power3.out',
-        onUpdate: () => renderCylinder(cylinderState.current.angle),
-        onComplete: () => {
-          // Normalize to avoid huge step numbers
+      const startAngle = cylinderState.current.angle;
+      const startTime = performance.now();
+      const duration = 850;
+
+      const stepFrame = (now) => {
+        const t = Math.min(1, (now - startTime) / duration);
+        const eased = easeOutCubic(t);
+        cylinderState.current.angle = startAngle + (targetAngle - startAngle) * eased;
+        renderCylinder(cylinderState.current.angle);
+
+        if (t < 1) {
+          tweenRafRef.current = requestAnimationFrame(stepFrame);
+        } else {
+          tweenRafRef.current = null;
           const safeStep = ((step % total) + total) % total;
           setCurrentStep(safeStep);
           cylinderState.current.angle = -safeStep * anglePerItem;
           renderCylinder(cylinderState.current.angle);
-        },
-      });
+        }
+      };
+
+      tweenRafRef.current = requestAnimationFrame(stepFrame);
     } else {
       cylinderState.current.angle = targetAngle;
       renderCylinder(cylinderState.current.angle);
     }
-  }, [anglePerItem, total, renderCylinder]);
+  }, [anglePerItem, total, renderCylinder, stopTween]);
 
   const next = useCallback(() => {
     rotateToStep(currentStep + 1, true);
@@ -107,9 +92,7 @@ export default function TeamSection() {
   }, [currentStep, rotateToStep]);
 
   const goToIndex = useCallback((targetIndex) => {
-    let diff = targetIndex - (currentStep % total);
-    let normDiff = ((diff % total) + total) % total;
-    if (normDiff > total / 2) normDiff -= total;
+    const normDiff = shortestStepDelta(currentStep, targetIndex, total);
     rotateToStep(currentStep + normDiff, true);
   }, [currentStep, total, rotateToStep]);
 
@@ -120,9 +103,30 @@ export default function TeamSection() {
     const handleResize = () => {
       renderCylinder(cylinderState.current.angle);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [renderCylinder]);
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      stopTween();
+    };
+  }, [renderCylinder, stopTween]);
+
+  // Defer loading 22 team images until user scrolls near #team
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || shouldLoadImages) return;
+
+    const preloadObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoadImages(true);
+          preloadObserver.disconnect();
+        }
+      },
+      { rootMargin: '600px 0px' }
+    );
+    preloadObserver.observe(el);
+    return () => preloadObserver.disconnect();
+  }, [shouldLoadImages]);
 
   // Auto-rotation interval: rotates continuously every 3.6s ONLY when visible on screen
   useEffect(() => {
@@ -130,6 +134,13 @@ export default function TeamSection() {
     if (!el) return;
 
     let isVisible = false;
+
+    const stopAutoRotate = () => {
+      if (autoRotateTimerRef.current) {
+        clearInterval(autoRotateTimerRef.current);
+        autoRotateTimerRef.current = null;
+      }
+    };
 
     const startAutoRotate = () => {
       stopAutoRotate();
@@ -139,13 +150,6 @@ export default function TeamSection() {
           next();
         }
       }, 3600);
-    };
-
-    const stopAutoRotate = () => {
-      if (autoRotateTimerRef.current) {
-        clearInterval(autoRotateTimerRef.current);
-        autoRotateTimerRef.current = null;
-      }
     };
 
     const observer = new IntersectionObserver(
@@ -195,7 +199,7 @@ export default function TeamSection() {
       startAngle = cylinderState.current.angle;
       isPointerDown = true;
       isDraggingRef.current = false;
-      gsap.killTweensOf(cylinderState.current);
+      stopTween();
     };
 
     const onDragMove = (clientX) => {
@@ -204,7 +208,6 @@ export default function TeamSection() {
       if (Math.abs(diffX) > 6) {
         isDraggingRef.current = true;
       }
-      // Convert pixel distance to cylinder rotation angle
       const dragSensitivity = window.innerWidth < 768 ? 220 : 340;
       const deltaAngle = (diffX / dragSensitivity) * anglePerItem;
       cylinderState.current.angle = startAngle + deltaAngle;
@@ -227,7 +230,6 @@ export default function TeamSection() {
           prev();
         }
       } else {
-        // Snap to closest card
         const nearestStep = Math.round(-cylinderState.current.angle / anglePerItem);
         rotateToStep(nearestStep, true);
       }
@@ -266,7 +268,7 @@ export default function TeamSection() {
       window.removeEventListener('mouseup', onMouseUp);
       if (resumeTimeout) clearTimeout(resumeTimeout);
     };
-  }, [anglePerItem, next, prev, renderCylinder, rotateToStep]);
+  }, [anglePerItem, next, prev, renderCylinder, rotateToStep, stopTween]);
 
   return (
     <section
@@ -286,8 +288,6 @@ export default function TeamSection() {
       </div>
 
       <div className="team__container">
-        
-        {/* Editorial Section Header */}
         <div className="team__header">
           <div className="team__meta-row">
             <span className="team__label reveal-text">03 — SECRETARIAT & LEADERSHIP</span>
@@ -295,7 +295,6 @@ export default function TeamSection() {
           </div>
         </div>
 
-        {/* 3D Cylindrical Ring Revolving Stage */}
         <div className="team-cylinder-stage-wrapper">
           <div className="team-cylinder-stage" ref={stageRef}>
             <div className="team-cylinder-track" ref={trackRef}>
@@ -313,22 +312,20 @@ export default function TeamSection() {
                   }}
                 >
                   <div className="team-poster-frame">
-                    
-                    {/* Poster image (name & role are part of the artwork) */}
                     <div className="team-poster__photo-wrapper">
-                      <img
-                        src={member.image}
-                        alt={`${member.name} — ${member.shortRole}`}
-                        className="team-poster__photo"
-                        loading="lazy"
-                        decoding="async"
-                        width="300"
-                        height="400"
-                        draggable="false"
-                      />
+                      {shouldLoadImages && (
+                        <img
+                          src={member.image}
+                          alt={`${member.name} — ${member.shortRole}`}
+                          className="team-poster__photo"
+                          loading="lazy"
+                          decoding="async"
+                          width="300"
+                          height="400"
+                          draggable="false"
+                        />
+                      )}
                     </div>
-
-                    {/* Glassmorphic Rim Sheen */}
                     <div className="team-poster__sheen" aria-hidden="true"></div>
                   </div>
                 </div>
@@ -336,7 +333,6 @@ export default function TeamSection() {
             </div>
           </div>
         </div>
-
       </div>
     </section>
   );
