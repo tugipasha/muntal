@@ -2835,14 +2835,7 @@ body.hero-replaying .hero__bottom {
   color: #ffffff;
 }
 
-.site-footer__nav .site-footer__portal-link {
-  color: #dfb96c;
-  font-weight: 500;
-}
 
-.site-footer__nav .site-footer__portal-link:hover {
-  color: #ffd88a;
-}
 
 .site-footer__nav-dot {
   color: rgba(143, 168, 198, 0.35);

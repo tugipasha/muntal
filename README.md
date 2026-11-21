@@ -17,7 +17,7 @@ A dark, architectural React web application for MUNTAL (Model United Nations in 
 - **Chapter IV — Multi-Track Applications**:
   - 4 assembly tracks: Delegate, Delegation (Chairboard), Press, and Admin.
   - Multi-step application modal with progress meter, field validation, and confidential dossier formatting.
-  - Dual-mode submission API connecting to Google Apps Script / Google Sheets with automatic offline local storage backup and luxury receipt tracking codes.
+  - Submissions are POSTed to a Google Apps Script web app that appends rows to Google Sheets (set `VITE_SHEETS_URL`).
 - **Chapter V — Contact & Footer**: Conference dates, venue, and Secretariat contact channels.
 
 ## Development & Build
@@ -56,7 +56,7 @@ npm run build
     ├── committees-data.js           — Committee records & SVG artworks
     ├── team.js                      — Secretariat members data
     ├── apply.js                     — Application track configurations & fields
-    ├── api.js                       — Google Sheets payload normalization & client
+    ├── api.js                       — Payload builders & Google Sheets submit
     ├── shaders.js                   — WebGL vertex & fragment shaders
     └── styles.css                   — Core styling and chiaroscuro design system
 ```

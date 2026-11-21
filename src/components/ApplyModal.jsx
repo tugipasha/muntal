@@ -8,7 +8,7 @@ export default function ApplyModal({ isOpen, trackKey = 'delegate', initialCommi
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [receiptInfo, setReceiptInfo] = useState({ code: '', trackTitle: '', sheetName: '' });
+  const [receiptInfo, setReceiptInfo] = useState({ trackTitle: '' });
 
   const containerRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -134,15 +134,7 @@ export default function ApplyModal({ isOpen, trackKey = 'delegate', initialCommi
         throw new Error(result?.message || 'Submission could not be completed.');
       }
 
-      const trackingCode = result.trackingCode || `MUNTAL-${(config.application_type || config.id).substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-      setReceiptInfo({
-        code: trackingCode,
-        trackTitle: config.title,
-        sheetName: config.sheetName,
-        liveSynced: result.liveSynced,
-        archivedLocally: result.archivedLocally,
-      });
+      setReceiptInfo({ trackTitle: config.title });
 
       setFormData({});
       setIsSubmitted(true);
@@ -365,26 +357,14 @@ export default function ApplyModal({ isOpen, trackKey = 'delegate', initialCommi
               <span className="apply-success-tag">DOSSIER REGISTERED</span>
               <h3 className="apply-success-title">Application Submitted</h3>
               <p className="apply-success-desc" id="apply-success-desc">
-                Application submitted successfully. Thank you for applying to MUNTAL. Your credentials have been securely logged in the Secretariat archives.
+                Application submitted successfully. Thank you for applying to MUNTAL. The Secretariat will review your application.
               </p>
 
               <div className="apply-receipt-card">
                 <div className="apply-receipt-row">
-                  <span className="apply-receipt-label">Tracking Code</span>
-                  <span className="apply-receipt-val apply-receipt-val--code" id="apply-receipt-code">
-                    {receiptInfo.code}
-                  </span>
-                </div>
-                <div className="apply-receipt-row">
                   <span className="apply-receipt-label">Application Track</span>
                   <span className="apply-receipt-val" id="apply-receipt-track">
                     {receiptInfo.trackTitle}
-                  </span>
-                </div>
-                <div className="apply-receipt-row">
-                  <span className="apply-receipt-label">Destination Sheet</span>
-                  <span className="apply-receipt-val" id="apply-receipt-sheet" style={{ color: '#dfb96c' }}>
-                    {receiptInfo.sheetName}
                   </span>
                 </div>
                 <div className="apply-receipt-row">

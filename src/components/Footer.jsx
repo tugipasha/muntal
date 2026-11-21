@@ -24,15 +24,6 @@ export default function Footer() {
           <a href="#team" onClick={(e) => scrollToSection(e, '#team')}>Secretariat</a>
           <span className="site-footer__nav-dot" aria-hidden="true">·</span>
           <a href="#apply" onClick={(e) => scrollToSection(e, '#apply')}>Apply</a>
-          <span className="site-footer__nav-dot" aria-hidden="true">·</span>
-          <a
-            href="/panel/index.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="site-footer__portal-link"
-          >
-            Secretariat Portal ↗
-          </a>
         </nav>
 
         {/* Centerpiece in exact layout of 1st photo */}

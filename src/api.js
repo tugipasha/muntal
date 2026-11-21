@@ -1,18 +1,7 @@
-// MUNTAL Model United Nations — Google Sheets Integration API Client
-// Handles payload normalization and secure submission to Google Apps Script Web App
+// MUNTAL — Application payload builders
+// Başvurular Google Apps Script üzerinden Google Sheets'e yazılır.
 
-/**
- * Google Apps Script Web App Deployment URL
- * Set this to your published Web App URL (starts with https://script.google.com/macros/s/.../exec)
- * You can also set it via VITE_GOOGLE_APPS_SCRIPT_URL or localStorage.setItem('muntal_apps_script_url', '...')
- */
-export const GOOGLE_APPS_SCRIPT_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL) ||
-  'https://script.google.com/macros/s/AKfycbwtCol5X4oJS0gDsj1u187S-a2Dotx4sipqZ5hY1gOx8V_rTJ-h85JrcsqvjnnlXJzcIA/exec';
-
-/**
- * Exact Google Spreadsheet tab names as defined in Secretariat specification
- */
+// Google Sheet sekme adları
 export const SHEETS_MAPPING = {
   delegate: 'Delegate',
   delegation: 'Delegation',
@@ -22,203 +11,48 @@ export const SHEETS_MAPPING = {
   press: 'Press'
 };
 
-/**
- * Resolves the active submission endpoint URL with fallbacks:
- * 1. Query parameter (?apps_script_url=... or ?sheet_url=...)
- * 2. localStorage ('muntal_apps_script_url')
- * 3. window.MUNTAL_APPS_SCRIPT_URL
- * 4. import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL
- * 5. GOOGLE_APPS_SCRIPT_URL constant
- */
-export function getActiveEndpointUrl() {
-  if (typeof window !== 'undefined') {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const queryUrl = urlParams.get('apps_script_url') || urlParams.get('sheet_url');
-      if (queryUrl && (queryUrl.startsWith('https://') || queryUrl.startsWith('http://'))) {
-        localStorage.setItem('muntal_apps_script_url', queryUrl.trim());
-        return queryUrl.trim();
-      }
-    } catch (e) {
-      // Ignored
-    }
-
-    try {
-      const storedUrl = localStorage.getItem('muntal_apps_script_url');
-      if (storedUrl && (storedUrl.startsWith('https://') || storedUrl.startsWith('http://'))) {
-        return storedUrl.trim();
-      }
-    } catch (e) {
-      // Ignored
-    }
-
-    if (window.MUNTAL_APPS_SCRIPT_URL && typeof window.MUNTAL_APPS_SCRIPT_URL === 'string') {
-      const winUrl = window.MUNTAL_APPS_SCRIPT_URL.trim();
-      if (winUrl.startsWith('https://') || winUrl.startsWith('http://')) {
-        return winUrl;
-      }
-    }
-  }
-
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL) {
-    const envUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL.trim();
-    if (envUrl.startsWith('https://') || envUrl.startsWith('http://')) {
-      return envUrl;
-    }
-  }
-
-  return GOOGLE_APPS_SCRIPT_URL;
-}
+// Google Apps Script Web App (/exec) adresi. .env içindeki VITE_SHEETS_URL ile değiştirilebilir.
+const SHEETS_URL =
+  (import.meta.env && import.meta.env.VITE_SHEETS_URL) ||
+  'https://script.google.com/macros/s/AKfycbwZRc8qgrvuBJidofL5L5lb9mdt7ZPghWZm8rfSJKQxVaxde2Shh8-63krWCrAU0SRI/exec';
 
 /**
- * Submits normalized application payload.
- * If a live Google Apps Script URL is provided, it submits to Google Sheets via POST.
- * If still on placeholder or offline, it safely archives the submission in localStorage
- * and provides a smooth success state without any 404 network errors.
+ * Başvuruyu Google Sheets'e gönderir.
+ * text/plain kullanılır: CORS preflight tetiklenmez, Apps Script doPost direkt çalışır.
  *
- * @param {Object} data - Application payload including `application_type` and sheet-specific keys.
- * @returns {Promise<{success: boolean, message: string}>}
+ * @param {Object} data - buildApplicationPayload çıktısı
+ * @returns {Promise<{success: boolean, message?: string}>}
  */
 export async function submitApplication(data) {
   if (!data || typeof data !== 'object') {
     throw new Error('Invalid payload: data object is required');
   }
-
   if (!data.application_type) {
     throw new Error('application_type is required');
   }
 
-  const endpoint = getActiveEndpointUrl();
-  const isRealUrl = Boolean(endpoint && (endpoint.startsWith('https://') || endpoint.startsWith('http://')));
-
-  const randomCode = Math.floor(1000 + Math.random() * 9000);
-  const trackKey = (data.application_type || 'app').toLowerCase();
-  const trackPrefix = (trackKey.startsWith('del') ? 'DEL' : trackKey.substring(0, 3)).toUpperCase();
-  const trackingCode = `MUNTAL-${trackPrefix}-${randomCode}`;
-
-  const payloadWithMeta = {
-    ...data,
-    application_id: trackingCode,
-    tracking_code: trackingCode
-  };
-
-  // Local archive safety net: Record every application in localStorage so zero data is lost
-  // Deduplicates by email + track to ensure submissions never appear multiple times
+  let response;
   try {
-    if (typeof localStorage !== 'undefined') {
-      const existing = JSON.parse(localStorage.getItem('muntal_submissions') || '[]');
-      const applicantEmail = (data.email || data.head_delegate_email || '').trim().toLowerCase();
-      const filtered = existing.filter(item => {
-        const d = item.data || {};
-        const em = (d.email || d.head_delegate_email || '').trim().toLowerCase();
-        const tr = (item.track || d.application_type || '').toLowerCase();
-        if (applicantEmail && em === applicantEmail && tr === trackKey) return false;
-        return true;
-      });
-      filtered.unshift({
-        id: trackingCode,
-        submittedAt: new Date().toISOString(),
-        track: data.application_type,
-        sheet: SHEETS_MAPPING[data.application_type] || data.application_type,
-        destination: isRealUrl ? endpoint : 'local_archive',
-        data: payloadWithMeta
-      });
-      localStorage.setItem('muntal_submissions', JSON.stringify(filtered));
-    }
-  } catch (storageErr) {
-    console.warn('[MUNTAL Storage] LocalStorage caching skipped:', storageErr);
+    response = await fetch(SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(data)
+    });
+  } catch (err) {
+    throw new Error('Network error. Please check your connection and try again.');
   }
 
-  // 1. Live Google Apps Script submission
-  if (isRealUrl) {
-    console.info('[MUNTAL Sheets Integration] Transmitting to Google Apps Script endpoint:', endpoint);
-    console.info('[MUNTAL Sheets Integration] Target Sheet Tab:', SHEETS_MAPPING[data.application_type]);
-    console.info('[MUNTAL Sheets Integration] Form Payload:', payloadWithMeta);
-
-    let transmitted = false;
-
-    // Attempt 1: Standard fetch with text/plain (avoids CORS preflight)
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
-        },
-        body: JSON.stringify(payloadWithMeta)
-      });
-
-      if (response.ok) {
-        let jsonResponse;
-        try {
-          jsonResponse = await response.json();
-        } catch (parseErr) {
-          jsonResponse = { success: true, message: 'Application logged by Google Web App' };
-        }
-
-        if (jsonResponse.success !== false) {
-          transmitted = true;
-          return {
-            success: true,
-            trackingCode,
-            liveSynced: true,
-            message: jsonResponse.message || 'Application submitted successfully'
-          };
-        }
-      } else {
-        console.warn(`[MUNTAL Sheets Integration] Endpoint responded with HTTP ${response.status}: ${response.statusText}`);
-      }
-    } catch (standardFetchErr) {
-      console.warn('[MUNTAL Sheets Integration] Standard fetch hit CORS/Network restriction:', standardFetchErr.message);
-    }
-
-    // Attempt 2: no-cors mode (Essential for Google Apps Script 302 redirects across origins)
-    if (!transmitted) {
-      try {
-        console.info('[MUNTAL Sheets Integration] Retrying via resilient no-cors mode...');
-        await fetch(endpoint, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify(payloadWithMeta)
-        });
-        transmitted = true;
-        console.info('[MUNTAL Sheets Integration] Payload dispatched via no-cors mode.');
-        return {
-          success: true,
-          trackingCode,
-          liveSynced: true,
-          message: 'Application transmitted successfully to Google Sheets'
-        };
-      } catch (noCorsErr) {
-        console.warn('[MUNTAL Sheets Integration] no-cors dispatch was also blocked by network/browser:', noCorsErr.message);
-      }
-    }
-
-    // Attempt 3: If remote endpoint is 404 or completely unreachable, fallback safely to local archive
-    // The application is already safely recorded in localStorage.
-    console.warn('[MUNTAL Sheets Integration] Remote endpoint unavailable (404/CORS). Preserved in local Secretariat archives.');
-    return {
-      success: true,
-      trackingCode,
-      liveSynced: false,
-      archivedLocally: true,
-      message: 'Application recorded and safely archived in Secretariat records.'
-    };
+  let result;
+  try {
+    result = await response.json();
+  } catch (err) {
+    throw new Error('Unexpected response from server. Please try again.');
   }
 
-  // Safe local execution (No fetch called, avoiding 404 on placeholder string)
-  console.info('[MUNTAL Sheets Integration] Application processed and archived locally.');
-  await new Promise(resolve => setTimeout(resolve, 600));
-
-  return {
-    success: true,
-    trackingCode,
-    liveSynced: false,
-    archivedLocally: true,
-    message: 'Application submitted successfully'
-  };
+  if (!response.ok || result.success === false) {
+    throw new Error(result.message || 'Submission could not be completed.');
+  }
+  return result;
 }
 
 /**
