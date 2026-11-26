@@ -6,13 +6,10 @@ export default function Navbar({ onOpenApply }) {
   const [activeSection, setActiveSection] = useState('hero');
 
   const scrollTo = (targetId) => {
-    window.dispatchEvent(new CustomEvent('muntal:reveal', { detail: targetId }));
-    const el = document.getElementById(targetId);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-      setActiveSection(targetId);
-      setIsMobileOpen(false);
-    }
+    setActiveSection(targetId);
+    setIsMobileOpen(false);
+    window.dispatchEvent(new CustomEvent('muntal:scrollLock', { detail: { locked: false } }));
+    window.dispatchEvent(new CustomEvent('muntal:scrollTo', { detail: { targetId } }));
   };
 
   useEffect(() => {
@@ -44,11 +41,12 @@ export default function Navbar({ onOpenApply }) {
 
   // Prevent background scroll when mobile drawer is open
   useEffect(() => {
-    if (isMobileOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
+    document.body.style.overflow = isMobileOpen ? 'hidden' : '';
+    window.dispatchEvent(new CustomEvent('muntal:scrollLock', { detail: { locked: isMobileOpen } }));
+    return () => {
       document.body.style.overflow = '';
-    }
+      window.dispatchEvent(new CustomEvent('muntal:scrollLock', { detail: { locked: false } }));
+    };
   }, [isMobileOpen]);
 
   return (

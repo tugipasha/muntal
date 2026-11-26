@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 export default function Letters() {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'sg' | 'dg'
-
   return (
     <section className="section letters-section" id="letters" data-alias="manifesto">
       {/* Anchor bridges for backward compatibility */}
@@ -10,121 +8,38 @@ export default function Letters() {
       <span id="manifesto" style={{ position: 'absolute', top: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
 
       <div className="section__inner letters__inner">
-        {/* Minimal Editorial Header */}
-        <div className="letters__header">
-          <div className="letters__header-left">
-            <span className="letters__label reveal-text">01 — LETTERS FROM LEADERSHIP</span>
-            <span className="letters__sublabel reveal-text">Executive Addresses · MUNTAL</span>
+        <span className="letters__label reveal-text">01 — LETTER</span>
+
+        <article className="letter-card" tabIndex={0} aria-label="Letter from the Secretary-General">
+          <header className="letter-card__header">
+            <div className="letter-card__avatar" aria-hidden="true">
+              SG
+            </div>
+            <div className="letter-card__identity">
+              <span className="letter-card__role">SECRETARY-GENERAL</span>
+              <h3 className="letter-card__author">Bora Sücüllü</h3>
+            </div>
+          </header>
+
+          <div className="letter-card__body">
+            <p className="letter-card__salutation">Distinguished Participants,</p>
+            <p className="letter-card__p">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+            </p>
+            <p className="letter-card__p">
+              Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Curabitur pretium tincidunt lacus, nulla gravida orci a odio.
+            </p>
+            <p className="letter-card__p">
+              Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum praesent mauris fusce nec tellus sed augue semper porta.
+            </p>
           </div>
 
-          {/* Minimalist Segmented Filter */}
-          <div className="letters__tabs" role="tablist" aria-label="Select Letter">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'all'}
-              className={`letters__tab-btn letters__tab-btn--desktop-only ${activeTab === 'all' ? 'is-active' : ''}`}
-              onClick={() => setActiveTab('all')}
-            >
-              Both Letters
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'sg'}
-              className={`letters__tab-btn ${activeTab === 'sg' ? 'is-active' : ''}`}
-              onClick={() => setActiveTab('sg')}
-            >
-              Secretary-General
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'dg'}
-              className={`letters__tab-btn ${activeTab === 'dg' ? 'is-active' : ''}`}
-              onClick={() => setActiveTab('dg')}
-            >
-              Director-General
-            </button>
-          </div>
-        </div>
-
-        {/* Minimal Letter Boxes Grid */}
-        <div className={`letters__grid ${activeTab !== 'all' ? 'letters__grid--single' : ''}`}>
-          {/* Box 1: Secretary-General (Bora Sücüllü) */}
-          {(activeTab === 'all' || activeTab === 'sg') && (
-            <article className="letter-box" tabIndex={0} aria-label="Letter from the Secretary-General">
-              <header className="letter-box__header">
-                <div>
-                  <span className="letter-box__role">Office of the Secretary-General</span>
-                  <h3 className="letter-box__title">Diplomatic Address</h3>
-                </div>
-                <div className="letter-box__meta">
-                  
-                  <span className="letter-box__sep">·</span>
-                  <span>Izmir</span>
-                </div>
-              </header>
-
-              <div className="letter-box__content">
-                <p className="letter-box__salutation">
-                  Distinguished Delegates, Faculty Advisors &amp; Honored Guests,
-                </p>
-                <p className="letter-box__p">
-                  It is my distinct honor to welcome you to the 2027 session of MUNTAL. In an increasingly volatile global landscape, multilateral diplomacy is neither political theatre nor the rehearsal of entrenched sovereign postures; it is the disciplined pursuit of defensible consensus.
-                </p>
-                <p className="letter-box__p">
-                  Across every assembly, we invite you to challenge unexamined premises, negotiate with principled resolve, and author resolutions that withstand rigorous examination. May your deliberations be profound and transformative.
-                </p>
-              </div>
-
-              <footer className="letter-box__footer">
-                <div className="letter-box__valediction">With diplomatic regards,</div>
-                <div className="letter-box__signatory">
-                  <div className="letter-box__name">Bora Sücüllü</div>
-                  <div className="letter-box__position">Secretary-General · MUNTAL</div>
-                </div>
-              </footer>
-            </article>
-          )}
-
-          {/* Box 2: Director-General (Can Demir) */}
-          {(activeTab === 'all' || activeTab === 'dg') && (
-            <article className="letter-box" tabIndex={0} aria-label="Letter from the Director-General">
-              <header className="letter-box__header">
-                <div>
-                  <span className="letter-box__role">Office of the Director-General</span>
-                  <h3 className="letter-box__title">Institutional Address</h3>
-                </div>
-                <div className="letter-box__meta">
-                  
-                  <span className="letter-box__sep">·</span>
-                  <span>Izmir</span>
-                </div>
-              </header>
-
-              <div className="letter-box__content">
-                <p className="letter-box__salutation">
-                  Honored Participants &amp; Delegation Leaders,
-                </p>
-                <p className="letter-box__p">
-                  On behalf of the academic board and executive team, I extend our warmest welcome to Izmir. MUNTAL was built upon the conviction that ambitious international debate requires equally meticulous institutional stewardship and academic integrity.
-                </p>
-                <p className="letter-box__p">
-                  From specialized crisis cabinets to expansive multilateral chambers, every procedural directive has been calibrated to deliver an immersive and intellectually demanding experience. We look forward to welcoming you to Izmir.
-                </p>
-              </div>
-
-              <footer className="letter-box__footer">
-                <div className="letter-box__valediction">Cordially,</div>
-                <div className="letter-box__signatory">
-                  <div className="letter-box__name">Can Demir</div>
-                  <div className="letter-box__position">Director-General · MUNTAL 2027</div>
-                </div>
-              </footer>
-            </article>
-          )}
-        </div>
+          <footer className="letter-card__footer">
+            <span className="letter-card__rule" aria-hidden="true" />
+            <div className="letter-card__signatory-name">Bora Sücüllü</div>
+            <div className="letter-card__signatory-role">Secretary-General of MUNTAL</div>
+          </footer>
+        </article>
       </div>
     </section>
   );

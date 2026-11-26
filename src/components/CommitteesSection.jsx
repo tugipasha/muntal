@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { COMMITTEES, getCommitteeSvgArtwork } from '../committees-data.js';
-import { computeCommitteeCardLayout, easeOutCubic } from '../utils/carouselMath.js';
+import { computeCommitteeCardLayout, easeOutCubic, shortestStepDelta, normalizeAngle } from '../utils/carouselMath.js';
 
 function LaurelEmblem() {
   return (
     <svg
       className="team-poster__emblem-svg"
       viewBox="0 0 100 100"
-      width="34"
-      height="34"
+      width="28"
+      height="28"
       fill="none"
       stroke="currentColor"
       xmlns="http://www.w3.org/2000/svg"
@@ -77,6 +77,7 @@ export default function CommitteesSection({ onOpenDossier }) {
       card.classList.toggle('is-adjacent', isAdjacent);
       card.setAttribute('aria-selected', isCenter ? 'true' : 'false');
       card.style.pointerEvents = isCenter || isAdjacent ? 'auto' : 'none';
+      card.style.visibility = opacity === 0 ? 'hidden' : 'visible';
       card.style.transform = `translate3d(${x}px, 0, ${z}px) rotateY(${rotateY}deg) scale(${scale})`;
       card.style.opacity = opacity;
       card.style.zIndex = zIndex;
@@ -125,6 +126,11 @@ export default function CommitteesSection({ onOpenDossier }) {
   const prev = useCallback(() => {
     rotateToStep(currentStep - 1, true);
   }, [currentStep, rotateToStep]);
+
+  const goToIndex = useCallback((targetIndex) => {
+    const normDiff = shortestStepDelta(currentStep, targetIndex, total);
+    rotateToStep(currentStep + normDiff, true);
+  }, [currentStep, total, rotateToStep]);
 
   // Initial layout and resize handler
   useEffect(() => {
@@ -298,6 +304,16 @@ export default function CommitteesSection({ onOpenDossier }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [prev, next]);
 
+  const activateCard = useCallback((idx) => {
+    const baseAngle = idx * anglePerItem;
+    const norm = normalizeAngle(baseAngle + cylinderState.current.angle);
+    if (Math.abs(norm) < 24) {
+      onOpenDossier && onOpenDossier(idx);
+    } else {
+      goToIndex(idx);
+    }
+  }, [anglePerItem, goToIndex, onOpenDossier]);
+
   return (
     <section
       className="section committees-section"
@@ -306,13 +322,9 @@ export default function CommitteesSection({ onOpenDossier }) {
       tabIndex={0}
       style={{ outline: 'none' }}
     >
-      {/* 3D Monolithic Architectural Backdrop Elements */}
-      <div className="committees__backdrop" aria-hidden="true">
-        <div className="backdrop-block backdrop-block--1"></div>
-        <div className="backdrop-block backdrop-block--2"></div>
-        <div className="backdrop-block backdrop-block--3"></div>
-        <div className="backdrop-block backdrop-block--4"></div>
-        <div className="backdrop-light-glow"></div>
+      <div className="team-editorial-backdrop" aria-hidden="true">
+        <div className="team-backdrop-glow"></div>
+        <div className="team-backdrop-grid"></div>
       </div>
 
       <div className="committees__container">
@@ -323,7 +335,6 @@ export default function CommitteesSection({ onOpenDossier }) {
           </div>
         </div>
 
-        {/* 3D Cylindrical Ring Revolving Stage */}
         <div className="committees-cylinder-stage-wrapper">
           <div className="committees-cylinder-stage" ref={stageRef}>
             <div className="committees-cylinder-track" ref={trackRef}>
@@ -337,26 +348,18 @@ export default function CommitteesSection({ onOpenDossier }) {
                   aria-label={`View ${comm.code}, ${comm.name}`}
                   onClick={() => {
                     if (isDraggingRef.current) return;
-                    const baseAngle = idx * anglePerItem;
-                    const currentAngle = baseAngle + cylinderState.current.angle;
-                    const norm = (((currentAngle % 360) + 540) % 360) - 180;
-
-                    if (Math.abs(norm) < 24) {
-                      onOpenDossier && onOpenDossier(idx);
-                    } else if (norm > 0) {
-                      next();
-                    } else {
-                      prev();
+                    activateCard(idx);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      activateCard(idx);
                     }
                   }}
                 >
                   <div className="team-poster-frame">
                     <div className="team-poster__photo-wrapper">
-                      <div
-                        className="team-poster__photo"
-                        style={{ backgroundColor: comm.cardBg || '#112b4e' }}
-                        aria-hidden="true"
-                      />
+                      <div className="team-poster__photo committee-poster__bg" aria-hidden="true" />
                       <div
                         className="committee-poster__svg-overlay"
                         dangerouslySetInnerHTML={{ __html: getCommitteeSvgArtwork(comm.code) }}
@@ -365,17 +368,16 @@ export default function CommitteesSection({ onOpenDossier }) {
                       <div className="team-poster__overlay-grad"></div>
                     </div>
 
+                    <div className="team-poster__topbar">
+                      <span className="team-poster__hashtag">{comm.tagline}</span>
+                    </div>
+
                     <div className="team-poster__giant-text" aria-hidden="true">
                       {comm.posterTitle.split('\n').map((line, lIdx) => (
                         <span key={lIdx} className="team-poster__giant-line">
                           {line}
                         </span>
                       ))}
-                    </div>
-
-                    <div className="team-poster__topbar">
-                      <span className="team-poster__hashtag">{comm.tagline}</span>
-                      <span className="team-poster__code-badge">{comm.num}</span>
                     </div>
 
                     <div className="team-poster__footer">

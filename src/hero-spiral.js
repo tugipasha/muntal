@@ -1,6 +1,12 @@
 import { easeInOutCubic, easeOutCubic } from './utils/carouselMath.js';
+import {
+  CARD_SCALE,
+  HERO_SCROLL_TURNS,
+  HERO_SCROLL_VH_PER_TURN,
+  normalizeHeroScrollTurns,
+} from './hero-config.js';
 
-export const CARD_SCALE = 1.15;
+export { CARD_SCALE, HERO_SCROLL_TURNS, HERO_SCROLL_VH_PER_TURN, normalizeHeroScrollTurns };
 
 // Exact palette sampled from /public/images/img1.jpg..img10.jpg
 const TILE_PALETTE = [
@@ -18,9 +24,11 @@ const TILE_PALETTE = [
 
 const CONFIG = {
   cardScale: CARD_SCALE,
+  scrollTurns: HERO_SCROLL_TURNS,
   totalImages: TILE_PALETTE.length,
   cameraZ: 12,
   cameraSmoothing: 0.075,
+  scrollRotationSmoothing: 0.16,
   baseRotationSpeed: 0.001,
   rotationDecay: 0.9,
   cameraYMultiplier: 0.2,
@@ -31,7 +39,7 @@ const CONFIG = {
   tileHeightRatio: 1.16,
   baseSpiralGap: 0.35,
   tileOverlap: 0.005,
-  mobileTileScale: 0.8,
+  mobileTileScale: 0.78,
 };
 
 const VERTEX_SHADER_SRC = `
@@ -96,7 +104,7 @@ const FRAGMENT_SHADER_SRC = `
     edge = mix(0.82, 1.0, edge);
 
     float dist = distance(vWorldPosition, uCameraPosition);
-    float depth = 1.0 - smoothstep(7.0, 24.0, dist);
+    float depth = 1.0 - smoothstep(7.0, 26.0, dist);
     depth = mix(0.42, 1.0, depth);
 
     vec3 navyBias = vec3(0.04, 0.09, 0.17);
@@ -118,6 +126,44 @@ const FRAGMENT_SHADER_SRC = `
     gl_FragColor = vec4(color, 1.0);
   }
 `;
+
+/**
+ * Computes responsive camera Z, vertical FOV (degrees), spiral scale (X/Z vs Y pitch),
+ * and Y offset so portrait mobile viewports preserve wide sweeping 3D depth and open
+ * center spacing behind MUNTAL without horizontal clipping or accordion compression.
+ */
+function computeResponsiveCamera(width, height) {
+  const aspect = Math.max(0.35, width / Math.max(1, height));
+  const isPortrait = aspect < 1.0;
+
+  if (!isPortrait) {
+    return {
+      fovDeg: 45,
+      cameraZ: CONFIG.cameraZ,
+      spiralOffsetY: CONFIG.spiralOffsetY,
+      spiralScaleX: 1.0,
+      spiralScaleY: 1.0,
+      spiralScaleZ: 1.0,
+    };
+  }
+
+  // Keep FOV natural (48-52 deg) and pull camera slightly back so front-to-back 3D depth stays strong
+  const portraitFactor = Math.min(1, (1.0 - aspect) / 0.55);
+  const fovDeg = 46 + portraitFactor * 6;
+  const cameraZ = CONFIG.cameraZ + portraitFactor * 2.4;
+  const spiralScaleXZ = Math.max(0.64, Math.min(0.92, 0.54 + aspect * 0.36));
+  const spiralScaleY = Math.max(0.88, Math.min(1.0, 0.84 + aspect * 0.16));
+  const spiralOffsetY = CONFIG.spiralOffsetY * (0.95 - portraitFactor * 0.1);
+
+  return {
+    fovDeg,
+    cameraZ,
+    spiralOffsetY,
+    spiralScaleX: spiralScaleXZ,
+    spiralScaleY,
+    spiralScaleZ: spiralScaleXZ,
+  };
+}
 
 function createCurvedTileGeometry(radius, arcAngle, tileHeight, segments) {
   const vertCount = (segments + 1) * 2;
@@ -262,7 +308,6 @@ function mulMat4(out, a, b) {
 
 function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   let disposed = false;
-  let isMobile = window.innerWidth < 768;
 
   const canvas = document.createElement('canvas');
   canvas.className = 'hero__canvas';
@@ -271,10 +316,10 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   if (!ctx) return () => {};
   heroEl.appendChild(canvas);
 
-  const tilesPerRevolution = 12;
-  const revolutions = 4;
+  const tilesPerRevolution = 15;
+  const revolutions = 5;
   const totalTiles = tilesPerRevolution * revolutions;
-  const segments = 2;
+  const segments = 4;
 
   const scale = CONFIG.cardScale || 1.0;
   const startRadius = CONFIG.baseStartRadius * scale;
@@ -323,7 +368,6 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
     const radialRatio = radius / startRadius;
     const targetY = startY - i * spiralGap;
     const targetRotY = i * angleStep;
-    const targetScale = CONFIG.mobileTileScale;
 
     const seed = i * 1.618;
     const angle = (i / totalTiles) * Math.PI * 4.2 + (i % 3) * 0.8;
@@ -334,7 +378,7 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
       paletteIdx: i % CONFIG.totalImages,
       radialRatio,
       waveDelayMs,
-      target: { x: 0, y: targetY, z: 0, rotX: 0, rotY: targetRotY, rotZ: 0, scale: targetScale },
+      target: { x: 0, y: targetY, z: 0, rotX: 0, rotY: targetRotY, rotZ: 0, scale: 1.0 },
       dispersed: {
         x: Math.cos(angle) * distFromCenter + Math.sin(seed * 2.3) * 3,
         y: (startY - i * spiralGap) * 0.35 + Math.sin(seed * 1.7) * 6,
@@ -342,7 +386,7 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
         rotX: (Math.sin(seed * 0.9) - 0.2) * 1.1,
         rotY: angle + Math.PI * 0.55,
         rotZ: Math.cos(seed * 1.4) * 0.75,
-        scale: targetScale * (0.62 + (i % 5) * 0.1),
+        scale: 0.62 + (i % 5) * 0.1,
       },
     });
   }
@@ -356,18 +400,20 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
 
   let width = 390;
   let height = 844;
-  let cameraZ = CONFIG.cameraZ + 3;
+  let dpr = 1;
+  let camState = computeResponsiveCamera(width, height);
 
   const resizeCanvas = () => {
-    isMobile = window.innerWidth < 768;
-    cameraZ = CONFIG.cameraZ + (isMobile ? 3 : 0);
     width = heroEl.clientWidth || window.innerWidth;
     height = heroEl.clientHeight || window.innerHeight;
-    canvas.width = Math.max(1, Math.round(width));
-    canvas.height = Math.max(1, Math.round(height));
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    camState = computeResponsiveCamera(width, height);
+    canvas.width = Math.max(1, Math.round(width * dpr));
+    canvas.height = Math.max(1, Math.round(height * dpr));
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
-    setPerspectiveMatrix(projMat, 45, width / Math.max(1, height), 0.1, 100);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    setPerspectiveMatrix(projMat, camState.fovDeg, width / Math.max(1, height), 0.1, 100);
   };
   resizeCanvas();
 
@@ -415,7 +461,8 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
     if (allDone || forceConverged) convergenceActive = false;
   };
 
-  let spiralRotY = 0;
+  let idleRotY = 0;
+  let currentScrollRotY = 0;
   let targetCameraY = 0;
   let currentCameraY = 0;
   let isHeroVisible = true;
@@ -433,33 +480,44 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   const drawScene = () => {
     ctx.clearRect(0, 0, width, height);
 
-    setLookAtMatrix(viewMat, currentCameraY, cameraZ, currentCameraY * 0.4);
-    composeMatrixInto(modelMat, 0, 0, CONFIG.spiralOffsetY, 0, 0, spiralRotY, 0, 1, 1, 1);
+    const totalRotY = idleRotY + currentScrollRotY;
+    setLookAtMatrix(viewMat, currentCameraY, camState.cameraZ, currentCameraY * 0.4);
+    composeMatrixInto(
+      modelMat,
+      0,
+      0,
+      camState.spiralOffsetY,
+      0,
+      0,
+      totalRotY,
+      0,
+      camState.spiralScaleX,
+      camState.spiralScaleY,
+      camState.spiralScaleZ
+    );
     mulMat4(vmMat, viewMat, modelMat);
 
     let activeCount = 0;
     const ptsCount = (segments + 1) * 2;
     for (let i = 0; i < totalTiles; i++) {
       const off = i * 16;
-      const cx = instanceMatrices[off + 12];
-      const cy = instanceMatrices[off + 13];
-      const cz = instanceMatrices[off + 14];
-      const vz = vmMat[2] * cx + vmMat[6] * cy + vmMat[10] * cz + vmMat[14];
+      const instSlice = instanceMatrices.subarray(off, off + 16);
+      mulMat4(worldTileMat, vmMat, instSlice);
+
+      // Compute true transformed center of the curved tile (local center is at (0, 0, startRadius))
+      const vz = worldTileMat[8] * startRadius + worldTileMat[14];
       if (vz > -0.5) continue;
 
-      const wx = modelMat[0] * cx + modelMat[4] * cy + modelMat[8] * cz + modelMat[12];
-      const wy = modelMat[1] * cx + modelMat[5] * cy + modelMat[9] * cz + modelMat[13];
-      const wz = modelMat[2] * cx + modelMat[6] * cy + modelMat[10] * cz + modelMat[14];
-      const dist = Math.hypot(wx, wy - currentCameraY, wz - cameraZ);
-      const normDepth = 1 - smoothstep(7.0, 24.0, dist);
+      const vx = worldTileMat[0] * 0 + worldTileMat[8] * startRadius + worldTileMat[12];
+      const vy = worldTileMat[1] * 0 + worldTileMat[9] * startRadius + worldTileMat[13];
+      const dist = Math.hypot(vx, vy, vz);
+      const normDepth = 1 - smoothstep(7.0, 26.0, dist);
       const bucket = Math.max(0, Math.min(DEPTH_BUCKETS - 1, Math.round(normDepth * (DEPTH_BUCKETS - 1))));
 
       const item = drawItems[i];
       item.vz = vz;
       item.bucket = bucket;
 
-      const instSlice = instanceMatrices.subarray(off, off + 16);
-      mulMat4(worldTileMat, vmMat, instSlice);
       mulMat4(fullMat, projMat, worldTileMat);
 
       let valid = true;
@@ -467,7 +525,7 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
         const c = localCols[s];
         const wTop = fullMat[3] * c.x + fullMat[7] * c.yTop + fullMat[11] * c.z + fullMat[15];
         const wBot = fullMat[3] * c.x + fullMat[7] * c.yBot + fullMat[11] * c.z + fullMat[15];
-        if (wTop <= 0.05 || wBot <= 0.05) {
+        if (wTop <= 0.1 || wBot <= 0.1) {
           valid = false;
           break;
         }
@@ -487,7 +545,7 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
       }
     }
 
-    // Insertion sort on preallocated index array (N <= 48, zero GC)
+    // Back-to-front painter's sort using true transformed tile center vz
     for (let k = 1; k < activeCount; k++) {
       const idx = activeOrder[k];
       const keyVz = drawItems[idx].vz;
@@ -518,46 +576,33 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
     }
   };
 
-  let slowFrames = 0;
-  let stopIdle = false;
+  let lastTickAt = performance.now();
+
   const tick = () => {
     animationFrameId = null;
     if (disposed || !isHeroVisible) return;
     const t0 = performance.now();
+    const dt = Math.min(64, Math.max(4, t0 - lastTickAt));
+    lastTickAt = t0;
+    const dtFactor = dt / 16.667;
+
     if (convergenceActive) updateTileMatrices(t0, false);
 
-    const scrollProgress = scrollStateRef?.current?.scrollProgress || 0;
-    const spinVel = scrollStateRef?.current?.spinVelocity || 0;
-    spiralRotY += CONFIG.baseRotationSpeed + spinVel;
-    if (scrollStateRef?.current) {
-      scrollStateRef.current.spinVelocity *= CONFIG.rotationDecay;
-    }
+    const heroTurnCount = scrollStateRef?.current?.heroTurnCount ?? 0;
+    const postHeroProgress = scrollStateRef?.current?.postHeroProgress || 0;
 
-    targetCameraY = -scrollProgress * CONFIG.cameraYMultiplier * 10;
-    currentCameraY += (targetCameraY - currentCameraY) * CONFIG.cameraSmoothing;
+    idleRotY += CONFIG.baseRotationSpeed * dtFactor;
+    const targetScrollRotY = heroTurnCount * Math.PI * 2;
+    const rotAlpha = 1 - Math.pow(1 - CONFIG.scrollRotationSmoothing, dtFactor);
+    currentScrollRotY += (targetScrollRotY - currentScrollRotY) * rotAlpha;
+
+    const camAlpha = 1 - Math.pow(1 - CONFIG.cameraSmoothing, dtFactor);
+    targetCameraY = -postHeroProgress * CONFIG.cameraYMultiplier * 10;
+    currentCameraY += (targetCameraY - currentCameraY) * camAlpha;
 
     drawScene();
 
-    const frameCost = performance.now() - t0;
-    if (frameCost > 14) {
-      slowFrames++;
-      if (slowFrames >= 1) {
-        stopIdle = true;
-        if (convergenceActive) {
-          convergenceActive = false;
-          animationFrameId = requestAnimationFrame(() => {
-            animationFrameId = null;
-            if (disposed || !isHeroVisible) return;
-            updateTileMatrices(performance.now(), true);
-            drawScene();
-          });
-        }
-        return;
-      }
-    }
-    if (!stopIdle || convergenceActive) {
-      animationFrameId = requestAnimationFrame(tick);
-    }
+    animationFrameId = requestAnimationFrame(tick);
   };
 
   const kick = () => {
@@ -566,12 +611,14 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   };
 
   const onScroll = () => {
-    if (window.scrollY < window.innerHeight * 1.1) isHeroVisible = true;
-    if (stopIdle && isHeroVisible) kick();
+    const heroRect = heroEl.getBoundingClientRect();
+    if (heroRect.bottom > 0 && heroRect.top < window.innerHeight) {
+      isHeroVisible = true;
+    }
+    kick();
   };
   const onResize = () => {
     resizeCanvas();
-    if (window.scrollY < window.innerHeight * 1.1) isHeroVisible = true;
     kick();
   };
   window.addEventListener('scroll', onScroll, { passive: true });
@@ -580,8 +627,6 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   window.replayHeroIntro = () => {
     convergenceStart = performance.now();
     convergenceActive = true;
-    stopIdle = false;
-    slowFrames = 0;
     if (onReplayTypography) onReplayTypography();
     kick();
   };
@@ -603,11 +648,10 @@ function initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
         animationFrameId = null;
       }
     },
-    { threshold: 0.05 }
+    { threshold: 0 }
   );
   visibilityObserver.observe(heroEl);
 
-  // Draw clean converged first frame immediately on constrained CPU or start live wave
   updateTileMatrices(performance.now(), false);
   animationFrameId = requestAnimationFrame(tick);
 
@@ -626,17 +670,13 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   let disposed = false;
   let isMobile = window.innerWidth < 768;
 
-  if (isMobile) {
-    return initCanvas2DSpiral({ heroEl, scrollStateRef, onReplayTypography });
-  }
-
   const canvas = document.createElement('canvas');
   canvas.className = 'hero__canvas';
   canvas.style.opacity = '1';
 
   const contextOpts = {
     alpha: true,
-    antialias: !isMobile,
+    antialias: true,
     depth: true,
     powerPreference: 'high-performance',
   };
@@ -669,8 +709,8 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
 
   heroEl.appendChild(canvas);
 
-  const tilesPerRevolution = isMobile ? 12 : 15;
-  const revolutions = isMobile ? 4 : 5;
+  const tilesPerRevolution = 15;
+  const revolutions = 5;
   const totalTiles = tilesPerRevolution * revolutions;
   const segments = isSoftwareGl ? 4 : isMobile ? 6 : 8;
 
@@ -696,20 +736,19 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
 
     const targetY = startY - i * spiralGap;
     const targetRotY = i * angleStep;
-    const targetScale = isMobile ? CONFIG.mobileTileScale : 1.0;
 
     const seed = i * 1.618;
     const angle = (i / totalTiles) * Math.PI * 4.2 + (i % 3) * 0.8;
-    const distFromCenter = isMobile ? 7.0 + (i % 5) * 1.4 : 10.0 + (i % 7) * 1.8;
+    const distFromCenter = isMobile ? 6.5 + (i % 5) * 1.2 : 10.0 + (i % 7) * 1.8;
 
-    const dispersedX = Math.cos(angle) * distFromCenter + Math.sin(seed * 2.3) * (isMobile ? 3 : 5);
-    const dispersedY = (startY - i * spiralGap) * 0.35 + Math.sin(seed * 1.7) * (isMobile ? 6 : 9);
-    const dispersedZ = Math.sin(angle) * (isMobile ? 4.5 : 6.5) - (i % 4) * 2.0;
+    const dispersedX = Math.cos(angle) * distFromCenter + Math.sin(seed * 2.3) * (isMobile ? 2.6 : 5);
+    const dispersedY = (startY - i * spiralGap) * 0.35 + Math.sin(seed * 1.7) * (isMobile ? 5.5 : 9);
+    const dispersedZ = Math.sin(angle) * (isMobile ? 3.5 : 6.5) - (i % 4) * 1.6;
 
     const dispersedRotX = (Math.sin(seed * 0.9) - 0.2) * 1.1;
     const dispersedRotY = angle + Math.PI * 0.55;
     const dispersedRotZ = Math.cos(seed * 1.4) * 0.75;
-    const dispersedScale = targetScale * (0.62 + (i % 5) * 0.1);
+    const dispersedScale = 0.62 + (i % 5) * 0.1;
 
     const waveDelayMs = ((Math.abs(i - totalTiles / 2) / (totalTiles / 2)) * 0.42 + (i % 6) * 0.035) * 1000;
 
@@ -721,7 +760,7 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
     tileData.push({
       radialRatio,
       waveDelayMs,
-      target: { x: 0, y: targetY, z: 0, rotX: 0, rotY: targetRotY, rotZ: 0, scale: targetScale },
+      target: { x: 0, y: targetY, z: 0, rotX: 0, rotY: targetRotY, rotZ: 0, scale: 1.0 },
       dispersed: {
         x: dispersedX,
         y: dispersedY,
@@ -750,20 +789,23 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   const viewMatrix = new Float32Array(16);
   const modelMatrix = new Float32Array(16);
 
-  const maxDpr = isSoftwareGl ? 0.5 : isMobile ? 1.25 : 1.5;
-  let cameraZ = CONFIG.cameraZ + (isMobile ? 3 : 0);
+  const maxDpr = isSoftwareGl ? 1.0 : isMobile ? 2.0 : 1.75;
+  let camState = computeResponsiveCamera(
+    heroEl.clientWidth || window.innerWidth,
+    heroEl.clientHeight || window.innerHeight
+  );
 
   const resizeCanvas = () => {
     isMobile = window.innerWidth < 768;
-    cameraZ = CONFIG.cameraZ + (isMobile ? 3 : 0);
     const w = heroEl.clientWidth || window.innerWidth;
     const h = heroEl.clientHeight || window.innerHeight;
+    camState = computeResponsiveCamera(w, h);
     const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     canvas.width = Math.max(1, Math.round(w * dpr));
     canvas.height = Math.max(1, Math.round(h * dpr));
     canvas.style.width = `${w}px`;
     canvas.style.height = `${h}px`;
-    setPerspectiveMatrix(projectionMatrix, 45, w / Math.max(1, h), 0.1, 100);
+    setPerspectiveMatrix(projectionMatrix, camState.fovDeg, w / Math.max(1, h), 0.1, 100);
   };
   resizeCanvas();
 
@@ -925,7 +967,9 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   };
 
   const heroLocalState = {
-    spiralRotY: 0,
+    idleRotY: 0,
+    currentScrollRotY: 0,
+    targetScrollRotY: 0,
     targetTiltX: 0,
     targetTiltZ: 0,
     currentTiltX: 0,
@@ -946,25 +990,26 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
       matricesDirty = false;
     }
 
-    setLookAtMatrix(viewMatrix, heroLocalState.currentCameraY, cameraZ, heroLocalState.currentCameraY * 0.4);
+    const totalRotY = heroLocalState.idleRotY + heroLocalState.currentScrollRotY;
+    setLookAtMatrix(viewMatrix, heroLocalState.currentCameraY, camState.cameraZ, heroLocalState.currentCameraY * 0.4);
     composeMatrixInto(
       modelMatrix,
       0,
       0,
-      CONFIG.spiralOffsetY,
+      camState.spiralOffsetY,
       0,
       heroLocalState.currentTiltX,
-      heroLocalState.spiralRotY,
+      totalRotY,
       heroLocalState.currentTiltZ,
-      1,
-      1,
-      1
+      camState.spiralScaleX,
+      camState.spiralScaleY,
+      camState.spiralScaleZ
     );
 
     gl.uniformMatrix4fv(uProjLoc, false, projectionMatrix);
     gl.uniformMatrix4fv(uViewLoc, false, viewMatrix);
     gl.uniformMatrix4fv(uModelLoc, false, modelMatrix);
-    gl.uniform3f(uCamPosLoc, 0, heroLocalState.currentCameraY, cameraZ);
+    gl.uniform3f(uCamPosLoc, 0, heroLocalState.currentCameraY, camState.cameraZ);
 
     if (isWebGL2) {
       gl.drawElementsInstanced(gl.TRIANGLES, geo.indices.length, gl.UNSIGNED_SHORT, 0, totalTiles);
@@ -979,12 +1024,17 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   let animationFrameId = null;
   let throttledTimerId = null;
   let lastRenderAt = 0;
+  let lastTickAt = performance.now();
   let slowFrameCount = 0;
   let useThrottledLoop = isSoftwareGl;
 
+  const isSettling = () =>
+    Math.abs(heroLocalState.targetScrollRotY - heroLocalState.currentScrollRotY) > 0.001 ||
+    Math.abs(heroLocalState.targetCameraY - heroLocalState.currentCameraY) > 0.001;
+
   const scheduleNextFrame = () => {
     if (disposed || !isHeroVisible) return;
-    if (isSoftwareGl && !convergenceActive) return;
+    if (isSoftwareGl && !convergenceActive && !isSettling()) return;
 
     if (useThrottledLoop) {
       throttledTimerId = setTimeout(() => {
@@ -992,7 +1042,7 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
         if (!disposed && isHeroVisible) {
           animationFrameId = requestAnimationFrame(tick);
         }
-      }, isSoftwareGl ? 65 : 32);
+      }, isSoftwareGl ? 45 : 32);
     } else {
       animationFrameId = requestAnimationFrame(tick);
     }
@@ -1017,29 +1067,34 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
     lastRenderAt = now;
 
     const frameStart = performance.now();
+    const dt = Math.min(64, Math.max(4, frameStart - lastTickAt));
+    lastTickAt = frameStart;
+    const dtFactor = dt / 16.667;
 
     if (convergenceActive) {
       updateTileMatrices(frameStart, false);
     }
 
-    const scrollProgress = scrollStateRef?.current?.scrollProgress || 0;
-    const spinVel = scrollStateRef?.current?.spinVelocity || 0;
+    const heroTurnCount = scrollStateRef?.current?.heroTurnCount ?? 0;
+    const postHeroProgress = scrollStateRef?.current?.postHeroProgress || 0;
 
-    heroLocalState.spiralRotY += CONFIG.baseRotationSpeed + spinVel;
-    if (scrollStateRef?.current) {
-      scrollStateRef.current.spinVelocity *= CONFIG.rotationDecay;
-    }
+    heroLocalState.idleRotY += CONFIG.baseRotationSpeed * dtFactor;
+    heroLocalState.targetScrollRotY = heroTurnCount * Math.PI * 2;
+    const rotAlpha = 1 - Math.pow(1 - CONFIG.scrollRotationSmoothing, dtFactor);
+    heroLocalState.currentScrollRotY +=
+      (heroLocalState.targetScrollRotY - heroLocalState.currentScrollRotY) * rotAlpha;
 
+    const camAlpha = 1 - Math.pow(1 - CONFIG.cameraSmoothing, dtFactor);
     if (!isMobile) {
-      heroLocalState.currentTiltX += (heroLocalState.targetTiltX - heroLocalState.currentTiltX) * CONFIG.cameraSmoothing;
-      heroLocalState.currentTiltZ += (heroLocalState.targetTiltZ - heroLocalState.currentTiltZ) * CONFIG.cameraSmoothing;
+      heroLocalState.currentTiltX += (heroLocalState.targetTiltX - heroLocalState.currentTiltX) * camAlpha;
+      heroLocalState.currentTiltZ += (heroLocalState.targetTiltZ - heroLocalState.currentTiltZ) * camAlpha;
     } else {
       heroLocalState.currentTiltX = 0;
       heroLocalState.currentTiltZ = 0;
     }
 
-    heroLocalState.targetCameraY = -scrollProgress * CONFIG.cameraYMultiplier * 10;
-    heroLocalState.currentCameraY += (heroLocalState.targetCameraY - heroLocalState.currentCameraY) * CONFIG.cameraSmoothing;
+    heroLocalState.targetCameraY = -postHeroProgress * CONFIG.cameraYMultiplier * 10;
+    heroLocalState.currentCameraY += (heroLocalState.targetCameraY - heroLocalState.currentCameraY) * camAlpha;
 
     drawScene();
 
@@ -1074,10 +1129,11 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
   window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
   const handleScrollRender = () => {
-    if (window.scrollY < window.innerHeight * 1.1) {
+    const heroRect = heroEl.getBoundingClientRect();
+    if (heroRect.bottom > 0 && heroRect.top < window.innerHeight) {
       isHeroVisible = true;
     }
-    if (isSoftwareGl && isHeroVisible && !convergenceActive) {
+    if (isHeroVisible && (isSoftwareGl || (!animationFrameId && !throttledTimerId))) {
       kickOnDemandRender();
     }
   };
@@ -1089,7 +1145,8 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
       heroLocalState.targetTiltX = 0;
       heroLocalState.targetTiltZ = 0;
     }
-    if (window.scrollY < window.innerHeight * 1.1) {
+    const heroRect = heroEl.getBoundingClientRect();
+    if (heroRect.bottom > 0 && heroRect.top < window.innerHeight) {
       isHeroVisible = true;
     }
     kickOnDemandRender();
@@ -1115,6 +1172,7 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
       const wasVisible = isHeroVisible;
       isHeroVisible = entry.isIntersecting;
       if (isHeroVisible && !wasVisible) {
+        lastTickAt = performance.now();
         kickOnDemandRender();
       } else if (!isHeroVisible) {
         if (animationFrameId) {
@@ -1127,7 +1185,7 @@ export function initHeroSpiral({ heroEl, scrollStateRef, onReplayTypography }) {
         }
       }
     },
-    { threshold: 0.05 }
+    { threshold: 0 }
   );
   visibilityObserver.observe(heroEl);
 

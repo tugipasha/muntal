@@ -3,10 +3,8 @@ import React from 'react';
 export default function Footer() {
   const scrollToSection = (e, id) => {
     e.preventDefault();
-    const target = document.querySelector(id);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth' });
-    }
+    const targetId = id.replace(/^#/, '');
+    window.dispatchEvent(new CustomEvent('muntal:scrollTo', { detail: { targetId } }));
   };
 
   return (

@@ -37,6 +37,25 @@ test('computeCommitteeCardLayout places active center card at front', () => {
   assert.equal(Math.round(layout.x), 0);
   assert.equal(Math.round(layout.z), 0);
   assert.equal(layout.scale, 1);
+  assert.equal(layout.opacity, 1);
+});
+
+test('computeCommitteeCardLayout matches Team cylinder spacing on visible steps and fades at wrap seam', () => {
+  const commAdj = computeCommitteeCardLayout(3, -144, 72, 1280);
+  const teamAdj = computeTeamCardLayout(1, 0, 360 / 22, 1280);
+  assert.ok(Math.abs(commAdj.x - teamAdj.x) < 0.01);
+  assert.ok(Math.abs(commAdj.z - teamAdj.z) < 0.01);
+  assert.ok(Math.abs(commAdj.rotateY - teamAdj.rotateY) < 0.01);
+  assert.ok(Math.abs(commAdj.scale - teamAdj.scale) < 1e-6);
+  assert.ok(Math.abs(commAdj.opacity - teamAdj.opacity) < 1e-6);
+
+  const commOuter = computeCommitteeCardLayout(4, -144, 72, 1280);
+  const teamOuter = computeTeamCardLayout(2, 0, 360 / 22, 1280);
+  assert.ok(Math.abs(commOuter.x - teamOuter.x) < 0.01);
+  assert.ok(Math.abs(commOuter.opacity - teamOuter.opacity) < 1e-6);
+
+  const seam = computeCommitteeCardLayout(0, -180, 72, 1280);
+  assert.equal(seam.opacity, 0);
 });
 
 test('computeTeamCardLayout hides distant back cards', () => {

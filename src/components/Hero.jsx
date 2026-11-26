@@ -1,6 +1,12 @@
 import React, { useEffect, useRef } from 'react';
+import {
+  CARD_SCALE,
+  HERO_SCROLL_TURNS,
+  HERO_SCROLL_VH_PER_TURN,
+  normalizeHeroScrollTurns,
+} from '../hero-config.js';
 
-export const CARD_SCALE = 1.15;
+export { CARD_SCALE, HERO_SCROLL_TURNS };
 
 export function revealHeroTypography() {
   document.body.classList.remove('hero-replaying');
@@ -14,6 +20,8 @@ export function hideHeroTypography() {
 
 export default function Hero({ scrollStateRef }) {
   const containerRef = useRef(null);
+  const turns = normalizeHeroScrollTurns(HERO_SCROLL_TURNS);
+  const extraRunwayVh = turns * HERO_SCROLL_VH_PER_TURN;
 
   useEffect(() => {
     const heroEl = containerRef.current;
@@ -63,23 +71,29 @@ export default function Hero({ scrollStateRef }) {
   }, [scrollStateRef]);
 
   return (
-    <section className="hero" id="hero" ref={containerRef}>
-      <div className="hero__topbar">
-        <span className="hero__topbar-spacer"></span>
-        <span className="hero__topbar-center"></span>
-        <span className="hero__topbar-spacer"></span>
-      </div>
-      <div className="hero__core">
-        <h1 className="hero__title hero__title--brand" id="hero-title">
-          MUNTAL
-        </h1>
-      </div>
-      <div className="hero__bottom">
-        <span className="hero__bottom-spacer"></span>
-        <div className="hero__scroll" aria-hidden="true">
-          <span className="hero__scroll-line"></span>
+    <div
+      className="hero-runway"
+      id="hero"
+      style={{ '--hero-runway-extra': `${extraRunwayVh}vh` }}
+    >
+      <section className="hero" ref={containerRef}>
+        <div className="hero__topbar">
+          <span className="hero__topbar-spacer"></span>
+          <span className="hero__topbar-center"></span>
+          <span className="hero__topbar-spacer"></span>
         </div>
-      </div>
-    </section>
+        <div className="hero__core">
+          <h1 className="hero__title hero__title--brand" id="hero-title">
+            MUNTAL
+          </h1>
+        </div>
+        <div className="hero__bottom">
+          <span className="hero__bottom-spacer"></span>
+          <div className="hero__scroll" aria-hidden="true">
+            <span className="hero__scroll-line"></span>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
